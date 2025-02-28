@@ -1,33 +1,77 @@
+"use client"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Copy, Share2 } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
+import { supabase } from "@/lib/supabase"
 
 interface ReferralCode {
+  id: string
   code: string
-  discount: number
+  discount_amount: number
   description: string
+  times_used: number
+  max_uses: number
 }
 
 export function ReferralScreen() {
   const { user } = useAuth()
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
+  const [referralCodes, setReferralCodes] = useState<ReferralCode[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Generate unique referral codes based on user ID
-  const referralCodes: ReferralCode[] = [
-    {
-      code: `FRIEND10-${user?.id?.slice(0, 6)}`,
-      discount: 10,
-      description: "Give your friend $10 off their first order",
-    },
-    {
-      code: `FRIEND25-${user?.id?.slice(0, 6)}`,
-      discount: 25,
-      description: "Give your friend $25 off their first order",
-    },
-  ]
+  useEffect(() => {
+    async function fetchReferralCodes() {
+      if (!user) return
+      
+      try {
+        const { data, error } = await supabase
+          .from('referral_codes')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('discount_amount', { ascending: true })
+        
+        if (error) {
+          console.error('Error fetching referral codes:', error)
+          return
+        }
+        
+        if (data && data.length > 0) {
+          setReferralCodes(data)
+        } else {
+          console.log('No referral codes found, using fallback')
+          // Fallback to generated codes if none found in database
+          setReferralCodes([
+            {
+              id: '1',
+              code: `FRIEND10-${user.id.slice(0, 8)}`,
+              discount_amount: 10,
+              description: "Give your friend $10 off their first order",
+              times_used: 0,
+              max_uses: 10
+            },
+            {
+              id: '2',
+              code: `FRIEND25-${user.id.slice(0, 8)}`,
+              discount_amount: 25,
+              description: "Give your friend $25 off their first order",
+              times_used: 0,
+              max_uses: 10
+            }
+          ])
+        }
+      } catch (error) {
+        console.error('Error:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    fetchReferralCodes()
+  }, [user])
 
   const handleCopyCode = async (code: string) => {
     try {
@@ -43,12 +87,24 @@ export function ReferralScreen() {
     try {
       await navigator.share({
         title: "WashMaster Referral",
-        text: `Use my referral code ${code.code} to get $${code.discount} off your first order at WashMaster!`,
+        text: `Use my referral code ${code.code} to get $${code.discount_amount} off your first order at WashMaster!`,
         url: "https://washmaster.com",
       })
     } catch (err) {
       console.error("Failed to share:", err)
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="w-full max-w-2xl mx-auto p-4">
+        <Card>
+          <CardContent className="p-8 flex justify-center">
+            <p>Loading your referral codes...</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -63,20 +119,26 @@ export function ReferralScreen() {
         <CardContent className="space-y-6">
           <div className="bg-primary/5 rounded-lg p-4 text-center mb-6">
             <p className="text-lg font-medium">Your Available Credits</p>
-            <p className="text-3xl font-bold text-primary">${user?.credits || 0}</p>
+            <p className="text-3xl font-bold text-primary">${user?.user_metadata?.credits || 0}</p>
           </div>
 
           <div className="space-y-6">
             {referralCodes.map((referral) => (
-              <Card key={referral.code} className="relative overflow-hidden">
+              <Card key={referral.id} className="relative overflow-hidden">
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="space-y-2">
-                      <h3 className="font-semibold text-lg">${referral.discount} Off First Order</h3>
+                      <h3 className="font-semibold text-lg">${referral.discount_amount} Off First Order</h3>
                       <p className="text-sm text-muted-foreground">{referral.description}</p>
                       <p className="text-sm text-muted-foreground">
-                        You'll receive ${referral.discount} in credits when they complete their first order
+                        You'll receive ${referral.discount_amount} in credits when they complete their first order
                       </p>
+                      {referral.times_used > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          Used {referral.times_used} time{referral.times_used !== 1 ? 's' : ''} 
+                          {referral.max_uses && ` (${referral.max_uses - referral.times_used} remaining)`}
+                        </p>
+                      )}
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2 min-w-[200px]">
                       <div className="relative flex-1">

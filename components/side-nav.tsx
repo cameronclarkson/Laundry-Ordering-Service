@@ -1,4 +1,4 @@
-import { ShirtIcon as Tshirt, Package2, Gift, HelpCircle, Settings } from "lucide-react"
+import { ShirtIcon as Tshirt, Package2, Gift, HelpCircle, Settings, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
@@ -42,8 +42,16 @@ export function SideNav({ activeView, setActiveView }: SideNavProps) {
           </div>
         </nav>
 
-        {/* Admin Section fixed to bottom */}
-        <div className="pt-4 mt-auto border-t border-gray-200">
+        {/* Account and Admin Section fixed to bottom */}
+        <div className="space-y-2 pt-4 mt-auto border-t border-gray-200">
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-gray-600 hover:text-gray-900"
+            onClick={() => setActiveView("account")}
+          >
+            <User className="mr-2 h-4 w-4" />
+            Account
+          </Button>
           <Button
             variant="ghost"
             className="w-full justify-start text-gray-600 hover:text-gray-900"
@@ -72,6 +80,15 @@ export function SideNav({ activeView, setActiveView }: SideNavProps) {
               </Button>
             )
           })}
+          {/* Account Button for mobile */}
+          <Button
+            variant="ghost"
+            className="flex-1 flex-col py-2 h-16"
+            onClick={() => setActiveView("account")}
+          >
+            <User className="h-5 w-5 mb-1" />
+            <span className="text-xs">Account</span>
+          </Button>
           {/* Admin Button for mobile */}
           <Button
             variant="ghost"

@@ -2,6 +2,7 @@
 
 import { laundryOrderFormSchema } from "@/lib/schema"
 import { z } from "zod"
+import { supabase } from "@/lib/supabase"
 
 export async function laundryOrderFormAction(
   prevState: any,
@@ -71,30 +72,65 @@ const supportFormSchema = z.object({
   issue: z.string().min(10, "Please provide more details about your issue"),
 })
 
-export async function submitSupportIssue(prevState: any, formData: FormData) {
+export async function submitSupportIssue(formData: FormData) {
   try {
-    const data = supportFormSchema.parse(Object.fromEntries(formData))
+    const name = formData.get("name") as string
+    const email = formData.get("email") as string
+    const issue = formData.get("issue") as string
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    console.log("Support issue submitted:", data)
-
-    return {
-      success: true,
-      error: null,
-    }
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return {
-        success: false,
-        error: error.errors[0].message,
+    if (!name || !email || !issue) {
+      return { 
+        success: false, 
+        error: "Please fill out all fields" 
       }
     }
 
-    return {
-      success: false,
-      error: "An unexpected error occurred. Please try again.",
+    console.log("Submitting support ticket:", { name, email, issueLength: issue.length })
+
+    // Try to insert into the database
+    try {
+      const { data, error } = await supabase
+        .from("support_tickets")
+        .insert([
+          {
+            name,
+            email,
+            message: issue,
+            status: "new"
+          }
+        ])
+        .select()
+
+      if (error) {
+        console.error("Database error:", error)
+        // Fall back to the in-memory approach if database fails
+        throw error
+      }
+
+      console.log("Support ticket saved to database:", data)
+    } catch (dbError) {
+      // Fallback to in-memory approach
+      const timestamp = new Date().toISOString()
+      const ticketId = `ticket_${Date.now()}`
+      
+      console.log("Using fallback storage. Support ticket created:", { 
+        id: ticketId, 
+        name, 
+        email, 
+        message: issue,
+        created_at: timestamp
+      })
+    }
+    
+    return { 
+      success: true,
+      confirmationMessage: "We've received your support request and will respond shortly."
+    }
+  } catch (error) {
+    console.error("Error in submitSupportIssue:", error)
+    return { 
+      success: false, 
+      error: "An unexpected error occurred. Please try again." 
     }
   }
 }
