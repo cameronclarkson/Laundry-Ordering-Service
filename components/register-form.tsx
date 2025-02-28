@@ -63,31 +63,54 @@ export function RegisterForm({ onSuccess, onBack }: RegisterFormProps) {
           data: {
             name: formData.name,
             phone: formData.phone,
-          }
+            credits: 0, // Initialize credits for the referral system
+          },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         }
       })
 
       if (authError) throw authError
-
-      // Create customer record
-      if (authData.user) {
-        const { error: profileError } = await supabase
-          .from('customers')
-          .insert([
-            {
-              id: authData.user.id,
-              name: formData.name,
-              email: formData.email,
-              phone: formData.phone,
-            }
-          ])
-
-        if (profileError) throw profileError
+      
+      if (!authData.user) {
+        throw new Error("Failed to create user account")
       }
 
-      toast({
-        title: "Registration successful",
-        description: "Please check your email to verify your account.",
+      // Create customer record in the customers table
+      const { error: profileError } = await supabase
+        .from('customers')
+        .insert([
+          {
+            id: authData.user.id,
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            created_at: new Date().toISOString(),
+          }
+        ])
+
+      if (profileError) {
+        console.error("Error creating customer profile:", profileError)
+        // If customer profile creation fails, we should still let the user know they registered
+        // but log the error for debugging
+        toast({
+          title: "Account created but profile setup incomplete",
+          description: "Your account was created, but there was an issue setting up your profile. Please contact support.",
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Registration successful",
+          description: "Please check your email to verify your account.",
+        })
+      }
+
+      // Clear form data
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        password: "",
+        confirmPassword: "",
       })
 
       onSuccess?.()
@@ -97,6 +120,7 @@ export function RegisterForm({ onSuccess, onBack }: RegisterFormProps) {
         description: error instanceof Error ? error.message : "Something went wrong",
         variant: "destructive",
       })
+      console.error("Registration error:", error)
     } finally {
       setIsLoading(false)
     }
