@@ -9,6 +9,7 @@ export interface Order {
   status: 'pending' | 'processing' | 'completed' | 'cancelled'
   total_amount: number
   customer_id: string
+  delivery_address?: string
   customers?: {
     name: string
     email: string
@@ -25,6 +26,28 @@ export interface Order {
   }[]
 }
 
+interface SupabaseOrder {
+  id: string
+  created_at: string
+  status: 'pending' | 'processing' | 'completed' | 'cancelled'
+  total_amount: number
+  customer_id: string
+  customers: {
+    name: string
+    email: string
+    phone: string
+  } | null
+  order_items: Array<{
+    id: string
+    quantity: number
+    price: number
+    services: {
+      name: string
+      description: string
+    }
+  }> | null
+}
+
 export function useOrders() {
   const [orders, setOrders] = useState<Order[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -35,7 +58,11 @@ export function useOrders() {
       const { data, error } = await supabase
         .from('orders')
         .select(`
-          *,
+          id,
+          created_at,
+          status,
+          total_amount,
+          customer_id,
           customers (
             name,
             email,
@@ -54,7 +81,17 @@ export function useOrders() {
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setOrders(data || [])
+
+      // Type assertion to ensure data matches our Order interface
+      const rawData = data as unknown
+      const typedData = (rawData as SupabaseOrder[])?.map(order => ({
+        ...order,
+        delivery_address: '', // Add empty string as default
+        customers: order.customers || undefined,
+        order_items: order.order_items || undefined
+      })) as Order[]
+
+      setOrders(typedData || [])
     } catch (err) {
       console.error('Error fetching orders:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch orders')
@@ -65,7 +102,15 @@ export function useOrders() {
 
   const deleteOrder = async (id: string) => {
     try {
-      // First delete related order_items
+      // First delete related deliveries
+      const { error: deliveriesError } = await supabase
+        .from('deliveries')
+        .delete()
+        .eq('order_id', id)
+
+      if (deliveriesError) throw deliveriesError
+
+      // Then delete related order_items
       const { error: itemsError } = await supabase
         .from('order_items')
         .delete()
@@ -73,7 +118,7 @@ export function useOrders() {
 
       if (itemsError) throw itemsError
 
-      // Then delete the order
+      // Finally delete the order
       const { error: orderError } = await supabase
         .from('orders')
         .delete()
@@ -88,7 +133,7 @@ export function useOrders() {
       console.error('Error deleting order:', err)
       return { 
         success: false, 
-        error: err instanceof Error ? err.message : 'Failed to delete order. Make sure there are no related records.'
+        error: err instanceof Error ? err.message : 'Failed to delete order and related records.'
       }
     }
   }
