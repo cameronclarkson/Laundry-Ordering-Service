@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/components/ui/use-toast"
 import { supabase } from "@/lib/supabase"
 import { Eye, EyeOff } from "lucide-react"
+import { useSearchParams } from "next/navigation"
 
 interface RegisterFormProps {
   onSuccess?: () => void
@@ -15,6 +16,7 @@ interface RegisterFormProps {
 }
 
 export function RegisterForm({ onSuccess, onBack }: RegisterFormProps) {
+  const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -26,6 +28,20 @@ export function RegisterForm({ onSuccess, onBack }: RegisterFormProps) {
     password: "",
     confirmPassword: "",
   })
+
+  // Check URL parameters for pre-filled values from landing page
+  useEffect(() => {
+    const name = searchParams.get('name')
+    const email = searchParams.get('email')
+    const phone = searchParams.get('phone')
+    
+    setFormData(prev => ({
+      ...prev,
+      name: name || prev.name,
+      email: email || prev.email,
+      phone: phone || prev.phone
+    }))
+  }, [searchParams])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({

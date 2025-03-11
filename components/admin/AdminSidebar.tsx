@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, ShoppingBasket, Users, Shirt, Truck, ArrowLeft } from "lucide-react"
+import { Home, ShoppingBasket, Users, Shirt, Truck, ArrowLeft, Globe, Phone } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -37,6 +37,15 @@ export function AdminSidebar() {
           <Link href="/admin/deliveries" className="flex items-center p-2 rounded-md hover:bg-gray-100 text-sm">
             <Truck className="mr-2 h-4 w-4" />
             Deliveries
+          </Link>
+          <Separator className="my-2" />
+          <Link href="/admin/leads" className="flex items-center p-2 rounded-md hover:bg-gray-100 text-sm">
+            <Phone className="mr-2 h-4 w-4" />
+            Leads
+          </Link>
+          <Link href="/admin/landing" className="flex items-center p-2 rounded-md hover:bg-gray-100 text-sm">
+            <Globe className="mr-2 h-4 w-4" />
+            Landing Page
           </Link>
         </div>
       </nav>
