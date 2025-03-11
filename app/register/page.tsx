@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 
-// This page simply redirects to the new signup page
-export default function RegisterRedirect() {
+// Simple redirect page
+export default function RegisterPage() {
+  // Redirect to signup page
   redirect('/signup')
 }
