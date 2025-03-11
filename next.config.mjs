@@ -21,6 +21,12 @@ const nextConfig = {
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
   },
+  // Configure dynamic routes
+  dynamicParams: true,
+  // Configure which pages should be statically generated vs server-rendered
+  generateStaticParams: async () => {
+    return []
+  },
 }
 
 mergeConfig(nextConfig, userConfig)

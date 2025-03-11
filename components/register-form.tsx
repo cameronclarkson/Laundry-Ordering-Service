@@ -31,16 +31,18 @@ export function RegisterForm({ onSuccess, onBack }: RegisterFormProps) {
 
   // Check URL parameters for pre-filled values from landing page
   useEffect(() => {
-    const name = searchParams.get('name')
-    const email = searchParams.get('email')
-    const phone = searchParams.get('phone')
-    
-    setFormData(prev => ({
-      ...prev,
-      name: name || prev.name,
-      email: email || prev.email,
-      phone: phone || prev.phone
-    }))
+    if (typeof window !== 'undefined' && searchParams) {
+      const name = searchParams.get('name')
+      const email = searchParams.get('email')
+      const phone = searchParams.get('phone')
+      
+      setFormData(prev => ({
+        ...prev,
+        name: name || prev.name,
+        email: email || prev.email,
+        phone: phone || prev.phone
+      }))
+    }
   }, [searchParams])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

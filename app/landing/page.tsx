@@ -7,10 +7,12 @@ import { Input } from "@/components/ui/input"
 import { useToast } from "@/components/ui/use-toast"
 import { supabase } from "@/lib/supabase"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { ArrowRight, WashingMachine, Clock, ThumbsUp, Phone, Shirt, Droplets, Timer, Star, Check } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 export default function LandingPage() {
+  const router = useRouter()
   const [landingContent, setLandingContent] = useState({
     title: "Fresh Clothes, Zero Effort",
     subtitle: "Professional laundry service, delivered to your door",
@@ -74,7 +76,16 @@ export default function LandingPage() {
       setPhone("")
       
       // Redirect to registration page with prefilled data
-      window.location.href = `/register?name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}&phone=${encodeURIComponent(phone)}`
+      const registerUrl = `/register?name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}&phone=${encodeURIComponent(phone)}`
+      
+      // Use Next.js router for client-side navigation when possible
+      // with a fallback to window.location for static generation
+      try {
+        router.push(registerUrl)
+      } catch (routerError) {
+        // Fallback to window.location if router fails
+        window.location.href = registerUrl
+      }
     } catch (error: any) {
       toast({
         title: "Error",
