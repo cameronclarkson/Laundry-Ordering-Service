@@ -1,6 +1,6 @@
-import RegisterClient from "./client"
+import { redirect } from 'next/navigation'
 
-// This is a server component that can be statically generated
-export default function RegisterPage() {
-  return <RegisterClient />
-} 
+// This page simply redirects to the new signup page
+export default function RegisterRedirect() {
+  redirect('/signup')
+}
