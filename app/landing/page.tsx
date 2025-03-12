@@ -157,9 +157,6 @@ export default function LandingPage() {
     <div className="flex min-h-screen flex-col bg-background">
       <header className="bg-white shadow-sm py-4 px-6 flex justify-between items-center">
         <div className="text-2xl font-bold text-blue-600">Laundry Service</div>
-        <Link href="/login">
-          <Button variant="outline">Login</Button>
-        </Link>
       </header>
 
       {/* Hero Section */}
