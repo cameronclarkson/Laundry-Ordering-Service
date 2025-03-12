@@ -12,6 +12,8 @@ A comprehensive web application for laundry service ordering and management, bui
 - **Admin Dashboard**: Manage orders, customers, and business operations
 - **Real-time Order Tracking**: Monitor the status of orders from placement to delivery
 - **Responsive Design**: Optimized for both desktop and mobile devices
+- **Landing Page Editor**: Customizable marketing landing page for your business
+- **Leads Management**: Track and convert potential customers into paying clients
 
 ## 📋 Prerequisites
 
@@ -84,6 +86,59 @@ The application uses Supabase Authentication for secure user management:
 2. Access the admin dashboard
 3. View and manage orders, customers, and business operations
 4. Update order statuses and manage the service
+
+## 🏢 Admin Dashboard & Features
+
+The admin portal provides comprehensive tools for managing all aspects of your laundry business:
+
+### Dashboard Overview
+- **Analytics Dashboard**: Real-time business metrics including:
+  - Total orders and order growth percentage
+  - Total revenue and revenue growth
+  - Active customers and customer growth
+  - Overall business growth rate
+- **Recent Orders**: Quick view of the most recent orders with status indicators
+
+### Order Management
+- **Order List**: Comprehensive view of all orders with filtering and sorting
+- **Order Details**: In-depth view of each order with customer information, items, and status
+- **Order Status Updates**: Change order status (pending, processing, completed, delivered)
+- **Order History**: Track the lifecycle of each order
+
+### Customer Management
+- **Customer Directory**: List of all registered customers
+- **Customer Profiles**: Detailed customer information including order history
+- **Customer Analytics**: Insights on customer activity and spending patterns
+
+### Service Management
+- **Service Offerings**: Add, edit, or remove laundry services
+- **Pricing Controls**: Update pricing for various service types
+- **Service Availability**: Control which services are currently available
+
+### Delivery Management
+- **Delivery Scheduling**: Organize pickup and delivery schedules
+- **Route Optimization**: Tools for efficient delivery route planning
+- **Delivery Status Tracking**: Real-time updates on delivery status
+
+### Marketing Tools
+
+#### Landing Page Editor
+- **Content Management**: Easily update your public-facing landing page without coding
+- **Edit Key Elements**:
+  - Main headline and subtitle
+  - Service descriptions
+  - Call-to-action buttons
+  - Feature highlights
+- **Live Preview**: See changes in real-time before publishing
+- **One-Click Publishing**: Instantly update your public website
+
+#### Leads Management
+- **Lead Tracking**: Capture and organize potential customer information
+- **Lead Details**: Store contact information and interaction history
+- **Note Taking**: Add notes about lead interactions
+- **Conversion Tracking**: Mark leads as converted when they become customers
+- **Search & Filter**: Quickly find specific leads
+- **Conversion Analytics**: Track lead-to-customer conversion rates
 
 ## 🧰 Tech Stack
 
