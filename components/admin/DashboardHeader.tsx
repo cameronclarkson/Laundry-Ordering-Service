@@ -12,6 +12,26 @@ import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { DateRange } from "react-day-picker"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Select as UiSelect, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { saveAs } from "file-saver"
+import { supabase } from '@/lib/supabase'
+import ReportDownloadModal from './ReportDownloadModal'
+
+function toCsv(rows: any[], fields: string[]): string {
+  const header = fields.join(",")
+  const csvRows = rows.map(row =>
+    fields.map(f => {
+      let val = row[f]
+      if (typeof val === "string" && (val.includes(",") || val.includes("\""))) {
+        val = '"' + val.replace(/"/g, '""') + '"'
+      }
+      return val
+    }).join(",")
+  )
+  return [header, ...csvRows].join("\n")
+}
 
 export function DashboardHeader() {
   const [date, setDate] = useState<DateRange | undefined>({
@@ -20,6 +40,17 @@ export function DashboardHeader() {
   })
 
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [selectedFields, setSelectedFields] = useState<string[]>(["orderId", "customerName", "email", "total", "status", "date"])
+  const [reportFormat, setReportFormat] = useState("csv")
+  const fieldOptions = [
+    { label: "Order ID", value: "orderId" },
+    { label: "Customer Name", value: "customerName" },
+    { label: "Email", value: "email" },
+    { label: "Total", value: "total" },
+    { label: "Status", value: "status" },
+    { label: "Date", value: "date" },
+  ]
 
   const handleRefresh = () => {
     setIsRefreshing(true)
@@ -27,6 +58,81 @@ export function DashboardHeader() {
     setTimeout(() => {
       setIsRefreshing(false)
     }, 1000)
+  }
+
+  const handleFieldChange = (field: string) => {
+    setSelectedFields((prev) =>
+      prev.includes(field) ? prev.filter((f) => f !== field) : [...prev, field]
+    )
+  }
+
+  const handleReportDownload = async ({ fields, startDate, endDate, fileFormat }) => {
+    // Fetch orders from Supabase
+    const { data: orders, error } = await supabase
+      .from('orders')
+      .select(`
+        id,
+        created_at,
+        status,
+        total_amount,
+        customers (
+          name,
+          email
+        )
+      `)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      alert('Failed to fetch orders: ' + error.message)
+      return
+    }
+
+    // Filter by date range
+    let filtered = orders
+    if (startDate && endDate) {
+      const from = new Date(startDate).getTime()
+      const to = new Date(endDate).getTime()
+      filtered = orders.filter((order) => {
+        const orderDate = new Date(order.created_at).getTime()
+        return orderDate >= from && orderDate <= to
+      })
+    }
+
+    // Map to selected fields
+    const fieldMap = {
+      user_id: o => o.id,
+      username: o => o.customers?.name || '',
+      email: o => o.customers?.email || '',
+      registration_date: o => o.created_at,
+      last_login: o => '', // Not available
+      activity_count: o => '', // Not available
+      subscription_status: o => '', // Not available
+      orderId: o => o.id,
+      customerName: o => o.customers?.name || '',
+      total: o => o.total_amount,
+      status: o => o.status,
+      date: o => o.created_at,
+    }
+    const rows = filtered.map((order) => {
+      const row = {}
+      fields.forEach(f => {
+        row[f] = fieldMap[f] ? fieldMap[f](order) : ''
+      })
+      return row
+    })
+
+    // Generate file
+    let fileContent
+    let fileName
+    if (fileFormat === "csv") {
+      fileContent = toCsv(rows, fields)
+      fileName = `orders-report-${Date.now()}.csv`
+    } else {
+      fileContent = toCsv(rows, fields)
+      fileName = `orders-report-${Date.now()}.csv`
+    }
+    const blob = new Blob([fileContent], { type: "text/csv;charset=utf-8;" })
+    saveAs(blob, fileName)
   }
 
   return (
@@ -69,15 +175,10 @@ export function DashboardHeader() {
             />
           </PopoverContent>
         </Popover>
-        
         <Button variant="outline" size="icon" onClick={handleRefresh} className="border-blue-300 text-blue-900 bg-blue-100 hover:bg-blue-200">
           <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")}/>
         </Button>
-        
-        <Button className="bg-blue-900 hover:bg-blue-800 text-white">
-          <Download className="mr-2 h-4 w-4" />
-          Download Report
-        </Button>
+        <ReportDownloadModal onDownload={handleReportDownload} />
       </div>
     </div>
   )
