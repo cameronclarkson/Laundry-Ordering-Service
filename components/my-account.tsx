@@ -65,16 +65,16 @@ export function MyAccount({ onBack }: MyAccountProps) {
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card className="w-full max-w-2xl mx-auto shadow-2xl border-blue-300 bg-white/95 rounded-2xl">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <Button variant="ghost" onClick={onBack} className="mr-4">
+            <Button variant="ghost" onClick={onBack} className="mr-4 text-blue-900 hover:bg-blue-200/60">
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-              <CardTitle>My Account</CardTitle>
-              <CardDescription>Manage your account settings and preferences</CardDescription>
+              <CardTitle className="text-blue-900">My Account</CardTitle>
+              <CardDescription className="text-slate-700">Manage your account settings and preferences</CardDescription>
             </div>
           </div>
           <Button 
@@ -91,16 +91,17 @@ export function MyAccount({ onBack }: MyAccountProps) {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
+            <Label htmlFor="name" className="text-blue-900">Full Name</Label>
             <Input
               id="name"
               name="name"
               value={formData.name}
               onChange={handleChange}
+              className="border-blue-300 bg-blue-100 text-blue-900"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-blue-900">Email</Label>
             <Input
               id="email"
               name="email"
@@ -108,22 +109,24 @@ export function MyAccount({ onBack }: MyAccountProps) {
               value={formData.email}
               onChange={handleChange}
               disabled
+              className="border-blue-300 bg-blue-100 text-blue-900"
             />
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-slate-500">
               Email cannot be changed
             </p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number</Label>
+            <Label htmlFor="phone" className="text-blue-900">Phone Number</Label>
             <Input
               id="phone"
               name="phone"
               type="tel"
               value={formData.phone}
               onChange={handleChange}
+              className="border-blue-300 bg-blue-100 text-blue-900"
             />
           </div>
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button type="submit" className="w-full bg-blue-900 hover:bg-blue-800 text-white shadow-md" disabled={isLoading}>
             {isLoading ? "Saving..." : "Save Changes"}
           </Button>
         </form>

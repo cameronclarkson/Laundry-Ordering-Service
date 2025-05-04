@@ -1,10 +1,10 @@
 import { Card, CardContent } from "@/components/ui/card"
 
 const calculatePrice = (weight: string) => {
-  const pricePerPound = 1.99
+  const pricePerPound = 1.75
   const [min, max] = weight.split("-").map(Number)
   const averageWeight = max ? (min + max) / 2 : min
-  return (averageWeight * pricePerPound).toFixed(2)
+  return Math.max(averageWeight * pricePerPound, 17.5).toFixed(2)
 }
 
 export function OrderSummaryStep({ formData }) {

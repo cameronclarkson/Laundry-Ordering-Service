@@ -31,7 +31,7 @@ export function DashboardHeader() {
 
   return (
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-      <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+      <h1 className="text-3xl font-bold tracking-tight text-blue-900">Dashboard</h1>
       <div className="flex flex-wrap items-center gap-2">
         <Popover>
           <PopoverTrigger asChild>
@@ -39,11 +39,11 @@ export function DashboardHeader() {
               id="date"
               variant={"outline"}
               className={cn(
-                "w-[240px] justify-start text-left font-normal",
-                !date && "text-muted-foreground"
+                "w-[240px] justify-start text-left font-normal text-blue-900 border-blue-300 bg-blue-100 hover:bg-blue-200",
+                !date && "text-slate-500"
               )}
             >
-              <CalendarIcon className="mr-2 h-4 w-4" />
+              <CalendarIcon className="mr-2 h-4 w-4 text-blue-900" />
               {date?.from ? (
                 date.to ? (
                   <>
@@ -70,11 +70,11 @@ export function DashboardHeader() {
           </PopoverContent>
         </Popover>
         
-        <Button variant="outline" size="icon" onClick={handleRefresh}>
-          <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+        <Button variant="outline" size="icon" onClick={handleRefresh} className="border-blue-300 text-blue-900 bg-blue-100 hover:bg-blue-200">
+          <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")}/>
         </Button>
         
-        <Button>
+        <Button className="bg-blue-900 hover:bg-blue-800 text-white">
           <Download className="mr-2 h-4 w-4" />
           Download Report
         </Button>

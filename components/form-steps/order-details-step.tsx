@@ -5,11 +5,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 
 const calculatePrice = (weight: string) => {
-  const pricePerPound = 1.99
+  const pricePerPound = 1.75
   const [min, max] = weight.split("-").map(Number)
   const averageWeight = max ? (min + max) / 2 : min
   const basePrice = averageWeight * pricePerPound
-  return Math.max(basePrice, 10).toFixed(2) // Ensure minimum $10 charge
+  return Math.max(basePrice, 17.5).toFixed(2) // Ensure minimum $17.50 charge (10 lbs)
 }
 
 export function OrderDetailsStep({ formData, onChange, errors }) {
@@ -45,7 +45,7 @@ export function OrderDetailsStep({ formData, onChange, errors }) {
           </p>
         )}
         <div className="mt-2 text-sm text-muted-foreground">
-          Estimated Price: ${calculatedPrice} (Minimum $10 charge)
+          Estimated Price: ${calculatedPrice}
         </div>
       </div>
       <div className="group/field grid gap-2" data-invalid={!!errors?.schedulingOption}>

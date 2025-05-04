@@ -179,33 +179,35 @@ export function Orders({ onBack }: OrdersProps) {
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <div className="flex items-center">
-          <Button variant="ghost" onClick={onBack} className="mr-4">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <CardTitle>My Orders</CardTitle>
-            <CardDescription>View your current and past orders</CardDescription>
+    <div className="min-h-screen bg-gradient-to-b from-blue-200 via-white to-white py-12 px-4">
+      <Card className="w-full max-w-2xl mx-auto shadow-xl border-blue-300 bg-white/95 rounded-2xl">
+        <CardHeader>
+          <div className="flex items-center">
+            <Button variant="ghost" onClick={onBack} className="mr-4 text-blue-900 hover:bg-blue-200/60">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <CardTitle className="text-blue-900">My Orders</CardTitle>
+              <CardDescription className="text-blue-700">View your current and past orders</CardDescription>
+            </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="current" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="current">Current Orders ({currentOrders.length})</TabsTrigger>
-            <TabsTrigger value="past">Past Orders ({pastOrders.length})</TabsTrigger>
-          </TabsList>
-          <TabsContent value="current">
-            <OrderList orders={currentOrders} />
-          </TabsContent>
-          <TabsContent value="past">
-            <OrderList orders={pastOrders} />
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="current" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 bg-blue-100 rounded-lg mb-4">
+              <TabsTrigger value="current" className="data-[state=active]:bg-blue-900 data-[state=active]:text-white rounded-lg text-blue-900">Current Orders ({currentOrders.length})</TabsTrigger>
+              <TabsTrigger value="past" className="data-[state=active]:bg-blue-900 data-[state=active]:text-white rounded-lg text-blue-900">Past Orders ({pastOrders.length})</TabsTrigger>
+            </TabsList>
+            <TabsContent value="current">
+              <OrderList orders={currentOrders} />
+            </TabsContent>
+            <TabsContent value="past">
+              <OrderList orders={pastOrders} />
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
   )
 }
 

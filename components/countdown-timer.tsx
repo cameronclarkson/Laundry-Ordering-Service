@@ -38,7 +38,7 @@ export function CountdownTimer({ targetDate }: CountdownTimerProps) {
   }, [targetDate])
 
   return (
-    <div className="flex items-center space-x-1 text-white font-bold">
+    <div className="flex items-center space-x-1 font-bold bg-yellow-50 text-yellow-700 px-3 py-1 rounded-md border border-yellow-200">
       {timeLeft.days > 0 && (
         <>
           <span>{timeLeft.days}d</span>

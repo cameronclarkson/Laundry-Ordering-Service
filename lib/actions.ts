@@ -23,17 +23,18 @@ export async function laundryOrderFormAction(
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
       // Calculate the order total based on the weight
-      const pricePerPound = 1.99 // $1.99 per pound
+      const pricePerPound = 1.75 // $1.75 per pound
       const weightRange = data.weight.split("-").map(Number)
       const averageWeight = weightRange.length > 1 ? (weightRange[0] + weightRange[1]) / 2 : weightRange[0]
-      const orderTotal = Math.max(averageWeight * pricePerPound, 10) // Ensure minimum $10 charge
+      const orderTotal = Math.max(averageWeight * pricePerPound, 17.5) // Ensure minimum $17.50 charge
 
       // Simulate generating a confirmation message
       const confirmationMessage = `Thank you, ${data.name}! Your delivery order for ${data.weight} lbs of laundry has been placed successfully. We'll ${data.schedulingOption === "asap" ? "process your order as soon as possible" : `schedule your service for ${data.scheduledDate}`}. Your total is $${orderTotal.toFixed(2)}.`
 
+      // Redacted logging: only log non-sensitive info
       console.log("Order placed:", {
-        ...data,
-        bleachOption: data.bleachOption,
+        weight: data.weight,
+        timestamp: new Date().toISOString(),
       })
 
       return {

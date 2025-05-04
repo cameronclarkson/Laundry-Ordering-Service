@@ -8,14 +8,21 @@ import { ArrowRight, CheckCircle, Clock, Star, Shield, Sparkles, ArrowUpRight } 
 import Image from "next/image"
 import { ZipCodeChecker } from "@/components/zip-code-checker"
 import { CountdownTimer } from "@/components/countdown-timer"
+import { SpecialOfferCheckoutModal } from "@/components/SpecialOfferCheckoutModal"
 
 export default function SpecialOfferPage() {
   const router = useRouter()
   const [showBookingForm, setShowBookingForm] = useState(false)
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false)
   
   // Set end date to 3 days from now
   const endDate = new Date()
   endDate.setDate(endDate.getDate() + 3)
+
+  // Example: these would come from your admin/dashboard logic or API
+  const specialPrice = 99
+  const offerDescription = "Refresh & Sanitize 5 Comforters for Just $99 (normally $199). Free pickup & delivery included."
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-white">
@@ -33,10 +40,6 @@ export default function SpecialOfferPage() {
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Shield className="h-5 w-5 text-blue-600" />
                   <span>Satisfaction Guaranteed</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Star className="h-5 w-5 text-blue-600" />
-                  <span>4.9/5 from 2000+ reviews</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Clock className="h-5 w-5 text-blue-600" />
@@ -59,7 +62,7 @@ export default function SpecialOfferPage() {
               <div className="mb-12">
                 <Button 
                   className="bg-blue-600 hover:bg-blue-700 text-white text-xl py-8 px-12 rounded-full shadow-lg hover:shadow-xl transform transition-all duration-200 hover:scale-105 group"
-                  onClick={() => router.push("/register")}
+                  onClick={() => setModalOpen(true)}
                 >
                   Book Your Cleaning Now - Save $100
                   <ArrowUpRight className="ml-2 h-6 w-6 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
@@ -68,6 +71,13 @@ export default function SpecialOfferPage() {
                   Serving all Atlanta metro area ZIP codes (30000-31999)
                 </p>
               </div>
+
+              <SpecialOfferCheckoutModal 
+                open={modalOpen} 
+                onOpenChange={setModalOpen} 
+                price={specialPrice} 
+                offerDescription={offerDescription} 
+              />
 
               {/* Timer Bar */}
               <div className="inline-flex items-center gap-3 bg-gradient-to-r from-orange-50 to-red-50 px-4 py-2 rounded-full text-orange-700 mb-12">
@@ -169,41 +179,33 @@ export default function SpecialOfferPage() {
 
             {/* Right Column - Social Proof & Benefits */}
             <div className="space-y-8">
-              {/* Before/After Comparison */}
-              <div className="relative aspect-[4/3] bg-gradient-to-r from-gray-100 to-gray-50 rounded-xl overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <p className="text-gray-400">Before/After Comparison</p>
-                </div>
-              </div>
-
               {/* Featured Reviews */}
               <div className="grid gap-4">
-                {[
-                  {
-                    text: "My comforters came back looking and smelling amazing! The service was quick and professional.",
-                    author: "Sarah M.",
-                    location: "Verified Customer"
-                  },
-                  {
-                    text: "Outstanding service! They picked up my comforters and returned them fresh and clean the next day.",
-                    author: "James R.",
-                    location: "Verified Customer"
-                  }
-                ].map((review, i) => (
-                  <Card key={i} className="bg-white/50 backdrop-blur">
-                    <CardContent className="pt-6">
+                {[{
+                  text: "My comforters came back looking and smelling amazing! The service was quick and professional.",
+                  author: "Sarah M.",
+                  location: "Verified Customer"
+                },
+                {
+                  text: "Outstanding service! They picked up my comforters and returned them fresh and clean the next day.",
+                  author: "James R.",
+                  location: "Verified Customer"
+                }].map((review, i) => (
+                  <Card key={i} className="bg-white/50 backdrop-blur relative overflow-hidden">
+                    {/* Comforter image as subtle accent */}
+                    <div className="absolute inset-0 opacity-10 flex items-center justify-center pointer-events-none select-none">
+                      <img src="/images/comforter.jpg" alt="Comforter" className="w-32 h-32 object-contain" />
+                    </div>
+                    <CardContent className="pt-6 relative z-10">
                       <div className="flex items-center mb-2">
                         {[...Array(5)].map((_, i) => (
                           <Star key={i} className="h-4 w-4 text-yellow-400" />
                         ))}
                       </div>
                       <p className="text-gray-700 mb-2">{review.text}</p>
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-blue-100" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">{review.author}</p>
-                          <p className="text-xs text-gray-500">{review.location}</p>
-                        </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{review.author}</p>
+                        <p className="text-xs text-gray-500">{review.location}</p>
                       </div>
                     </CardContent>
                   </Card>

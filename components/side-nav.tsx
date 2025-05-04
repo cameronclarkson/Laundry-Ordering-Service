@@ -2,6 +2,7 @@ import { ShirtIcon as Tshirt, Package2, Gift, HelpCircle, Settings, User } from 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
 
 interface SideNavProps {
   activeView: string
@@ -17,11 +18,17 @@ export function SideNav({ activeView, setActiveView }: SideNavProps) {
   ]
 
   const router = useRouter()
+  const { user } = useAuth()
+  const isAdmin = !!user?.user_metadata?.isAdmin
+
+  // Debug logging
+  console.log("Current user:", user)
+  console.log("User metadata:", user?.user_metadata)
 
   return (
     <>
       {/* Desktop sidebar */}
-      <div className="hidden lg:flex h-screen w-[200px] flex-col fixed left-0 top-0 border-r pt-8 p-4 bg-background">
+      <div className="hidden lg:flex h-screen w-[200px] flex-col fixed left-0 top-0 border-r pt-8 p-4 bg-gradient-to-b from-blue-200 via-white to-white">
         {/* Main Navigation */}
         <nav className="flex-1">
           <div className="space-y-2">
@@ -31,10 +38,13 @@ export function SideNav({ activeView, setActiveView }: SideNavProps) {
                 <Button
                   key={item.value}
                   variant={activeView === item.value ? "secondary" : "ghost"}
-                  className={cn("w-full justify-start", activeView === item.value && "bg-primary/10")}
+                  className={cn(
+                    "w-full justify-start text-blue-900 hover:bg-blue-200/60",
+                    activeView === item.value && "bg-blue-900/10 border-l-4 border-blue-900 text-blue-900 font-bold border-blue-800"
+                  )}
                   onClick={() => setActiveView(item.value)}
                 >
-                  <Icon className="mr-2 h-4 w-4" />
+                  <Icon className={cn("mr-2 h-4 w-4", activeView === item.value ? "text-blue-900" : "text-blue-500")} />
                   {item.label}
                 </Button>
               )
@@ -52,14 +62,16 @@ export function SideNav({ activeView, setActiveView }: SideNavProps) {
             <User className="mr-2 h-4 w-4" />
             Account
           </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-gray-600 hover:text-gray-900"
-            onClick={() => router.push('/admin')}
-          >
-            <Settings className="mr-2 h-4 w-4" />
-            Admin Dashboard
-          </Button>
+          {isAdmin && (
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-gray-600 hover:text-gray-900"
+              onClick={() => router.push('/admin')}
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              Admin Dashboard
+            </Button>
+          )}
         </div>
       </div>
 
@@ -90,14 +102,16 @@ export function SideNav({ activeView, setActiveView }: SideNavProps) {
             <span className="text-xs">Account</span>
           </Button>
           {/* Admin Button for mobile */}
-          <Button
-            variant="ghost"
-            className="flex-1 flex-col py-2 h-16"
-            onClick={() => router.push('/admin')}
-          >
-            <Settings className="h-5 w-5 mb-1" />
-            <span className="text-xs">Admin</span>
-          </Button>
+          {isAdmin && (
+            <Button
+              variant="ghost"
+              className="flex-1 flex-col py-2 h-16"
+              onClick={() => router.push('/admin')}
+            >
+              <Settings className="h-5 w-5 mb-1" />
+              <span className="text-xs">Admin</span>
+            </Button>
+          )}
         </nav>
       </div>
     </>
