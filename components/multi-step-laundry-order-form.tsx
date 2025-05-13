@@ -13,6 +13,9 @@ import { OrderSummaryAndPaymentStep } from "./form-steps/order-summary-and-payme
 import { SuccessScreen } from "./form-steps/success-screen"
 import { ArrowLeft } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
+import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js"
+import { loadStripe } from "@stripe/stripe-js"
+import { Check } from "lucide-react"
 
 interface MultiStepLaundryOrderFormProps extends React.ComponentProps<typeof Card> {
   onBack?: () => void
@@ -79,11 +82,25 @@ const STEPS = [
   { title: "Review & Payment", description: "Review your order and complete payment" },
 ]
 
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "")
+
 export function MultiStepLaundryOrderForm({ className, onBack }: MultiStepLaundryOrderFormProps) {
   const { user } = useAuth()
   const [currentStep, setCurrentStep] = React.useState(0)
-  const [state, dispatch] = useActionState<LaundryOrderFormState, any>(laundryOrderFormAction, initialState)
-  const [isPending, startTransition] = useTransition()
+  const [formData, setFormData] = React.useState<LaundryOrderFormState>({ ...initialState })
+  const [errors, setErrors] = React.useState<any>({})
+  const [step, setStep] = React.useState<"form" | "payment" | "success">("form")
+  const [clientSecret, setClientSecret] = React.useState<string | null>(null)
+  const [isLoading, setIsLoading] = React.useState(false)
+  const [paymentError, setPaymentError] = React.useState<string | null>(null)
+
+  const steps = user
+    ? [
+        { title: "Order Details", description: "Specify your laundry order" },
+        { title: "Address & Instructions", description: "Provide delivery information" },
+        { title: "Review & Payment", description: "Review your order and complete payment" },
+      ]
+    : STEPS
 
   const handleStepClick = (stepIndex: number) => {
     if (stepIndex < currentStep) {
@@ -92,7 +109,7 @@ export function MultiStepLaundryOrderForm({ className, onBack }: MultiStepLaundr
   }
 
   const handleNextStep = () => {
-    setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1))
+    setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1))
   }
 
   const handlePrevStep = () => {
@@ -100,38 +117,222 @@ export function MultiStepLaundryOrderForm({ className, onBack }: MultiStepLaundr
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    startTransition(() => {
-      dispatch({
-        type: "UPDATE_FIELD",
-        field: e.target.name,
-        value: e.target.value,
-      })
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
     })
   }
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const validate = () => {
+    const newErrors: any = {}
+    if (!formData.name) newErrors.name = "Name is required"
+    if (!formData.email) newErrors.email = "Email is required"
+    if (!formData.phone) newErrors.phone = "Phone is required"
+    if (!formData.weight) newErrors.weight = "Weight is required"
+    if (!formData.addressLine1) newErrors.addressLine1 = "Address is required"
+    if (!formData.city) newErrors.city = "City is required"
+    if (!formData.state) newErrors.state = "State is required"
+    if (!formData.zipCode) newErrors.zipCode = "ZIP code is required"
+    return newErrors
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const result = await dispatch({
-      type: "SUBMIT",
-      formData: state,
-    })
-    if ((result as unknown as LaundryOrderFormState).success) {
-      setCurrentStep(STEPS.length) // Set to a step beyond the last one to show success screen
+    setErrors({})
+    setPaymentError(null)
+    const validationErrors = validate()
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
+      return
+    }
+    setIsLoading(true)
+    try {
+      // Calculate price (example: $1.75/lb, min $17.50)
+      const [min, max] = formData.weight.split("-").map(Number)
+      const averageWeight = max ? (min + max) / 2 : min
+      const price = Math.max(averageWeight * 1.75, 17.5)
+      // Create payment intent
+      const res = await fetch("/api/create-payment-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: Math.round(price * 100),
+          email: user?.email || formData.email,
+          offer: `Laundry Order: ${formData.weight} lbs, ${formData.serviceType}`,
+          name: formData.name,
+          phone: formData.phone,
+        }),
+      })
+      const data = await res.json()
+      if (!data.clientSecret) throw new Error(data.error || "Could not start payment")
+      setClientSecret(data.clientSecret)
+      setStep("payment")
+    } catch (err: any) {
+      setPaymentError(err.message)
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  if (!state || typeof state !== 'object' || !('success' in state)) {
-    return null // or a loading spinner if desired
+  function StripePaymentForm({ onSuccess }: { onSuccess: () => void }) {
+    const stripe = useStripe()
+    const elements = useElements()
+    const [processing, setProcessing] = React.useState(false)
+    const [error, setError] = React.useState<string | null>(null)
+
+    const handlePayment = async (e: React.FormEvent) => {
+      e.preventDefault()
+      setProcessing(true)
+      setError(null)
+      if (!stripe || !elements) {
+        setError("Stripe not loaded")
+        setProcessing(false)
+        return
+      }
+      const cardElement = elements.getElement(CardElement)
+      if (!cardElement) {
+        setError("Card element not found")
+        setProcessing(false)
+        return
+      }
+      const { paymentIntent, error: stripeError } = await stripe.confirmCardPayment(clientSecret!, {
+        payment_method: {
+          card: cardElement,
+          billing_details: {
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+          },
+        },
+      })
+      if (stripeError) {
+        setError(stripeError.message || "Payment failed")
+        setProcessing(false)
+        return
+      }
+      if (paymentIntent && paymentIntent.status === "succeeded") {
+        onSuccess()
+      } else {
+        setError("Payment did not succeed")
+      }
+      setProcessing(false)
+    }
+
+    return (
+      <form onSubmit={handlePayment} className="space-y-6">
+        <CardElement options={{ hidePostalCode: true }} className="p-3 border rounded-md bg-white" />
+        {error && <div className="text-red-500 text-sm">{error}</div>}
+        <Button type="submit" className="w-full" disabled={processing}>{processing ? "Processing..." : "Pay Now"}</Button>
+      </form>
+    )
   }
 
-  // Dynamically set steps based on login status
-  const steps = user
-    ? [
-        { title: "Order Details", description: "Specify your laundry order" },
-        { title: "Address & Instructions", description: "Provide delivery information" },
-        { title: "Review & Payment", description: "Review your order and complete payment" },
-      ]
-    : STEPS
+  // Step content rendering
+  function renderStepContent() {
+    if (step === "form") {
+      if ((!user && currentStep === 0)) {
+        return <CustomerInfoStep formData={formData} onChange={handleInputChange} errors={errors} />
+      }
+      if ((user ? currentStep === 0 : currentStep === 1)) {
+        return <OrderDetailsStep formData={formData} onChange={handleInputChange} errors={errors} />
+      }
+      if ((user ? currentStep === 1 : currentStep === 2)) {
+        return <AddressInstructionsStep formData={formData} onChange={handleInputChange} errors={errors} />
+      }
+      if ((user ? currentStep === 2 : currentStep === 3)) {
+        // Order summary and payment trigger
+        return (
+          <div>
+            {clientSecret ? (
+              <Elements stripe={stripePromise} options={{ clientSecret }}>
+                <OrderSummaryAndPaymentStep
+                  formData={formData}
+                  errors={errors}
+                  onPaymentSuccess={() => setStep("success")}
+                />
+              </Elements>
+            ) : (
+              <>
+                <Card>
+                  <CardContent className="pt-6">
+                    <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
+                    <div className="space-y-2">
+                      <p><strong>Name:</strong> {formData.name}</p>
+                      <p><strong>Email:</strong> {user?.email || formData.email}</p>
+                      <p><strong>Phone:</strong> {formData.phone}</p>
+                      <p><strong>Estimated Weight:</strong> {formData.weight}</p>
+                      <p><strong>Estimated Price:</strong> ${(() => {
+                        const [min, max] = formData.weight.split("-").map(Number)
+                        const averageWeight = max ? (min + max) / 2 : min
+                        return Math.max(averageWeight * 1.75, 17.5).toFixed(2)
+                      })()}</p>
+                      <p><strong>Service Type:</strong> {formData.serviceType}</p>
+                      <p><strong>Scheduling:</strong> {formData.schedulingOption === "asap" ? "ASAP" : `Preferred date: ${formData.scheduledDate}`}</p>
+                      <p><strong>Address:</strong> {formData.addressLine1}, {formData.addressLine2 && `${formData.addressLine2}, `}{formData.city}, {formData.state} {formData.zipCode}</p>
+                      {formData.specialInstructions && (
+                        <p><strong>Special Instructions:</strong> {formData.specialInstructions}</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+                {paymentError && <div className="text-red-500 text-sm mt-4">{paymentError}</div>}
+                <Button
+                  type="button"
+                  className="mt-6 w-full"
+                  onClick={async () => {
+                    setIsLoading(true)
+                    setPaymentError(null)
+                    try {
+                      // Calculate price (example: $1.75/lb, min $17.50)
+                      const [min, max] = formData.weight.split("-").map(Number)
+                      const averageWeight = max ? (min + max) / 2 : min
+                      const price = Math.max(averageWeight * 1.75, 17.5)
+                      // Create payment intent
+                      const res = await fetch("/api/create-payment-intent", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          amount: Math.round(price * 100),
+                          email: user?.email || formData.email,
+                          offer: `Laundry Order: ${formData.weight} lbs, ${formData.serviceType}`,
+                          name: formData.name,
+                          phone: formData.phone,
+                        }),
+                      })
+                      if (!res.ok) {
+                        const err = await res.json()
+                        throw new Error(err.error || "Failed to create payment intent.")
+                      }
+                      const data = await res.json()
+                      if (!data.clientSecret) throw new Error(data.error || "Could not start payment")
+                      setClientSecret(data.clientSecret)
+                    } catch (err: any) {
+                      setPaymentError(err.message || "An unexpected error occurred. Please try again.")
+                    } finally {
+                      setIsLoading(false)
+                    }
+                  }}
+                  disabled={isLoading || !!clientSecret}
+                >
+                  {isLoading ? "Processing..." : "Continue to Payment"}
+                </Button>
+              </>
+            )}
+          </div>
+        )
+      }
+    }
+    if (step === "success") {
+      return (
+        <div className="text-center py-8">
+          <Check className="size-8 text-green-600 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Thank you for your order!</h3>
+          <p className="text-muted-foreground">Your payment was successful. We will contact you soon to schedule your pickup.</p>
+        </div>
+      )
+    }
+    return null
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-200 via-white to-white px-4 pt-8 flex justify-center">
@@ -148,58 +349,38 @@ export function MultiStepLaundryOrderForm({ className, onBack }: MultiStepLaundr
             <CardDescription className="text-blue-700">Place your order for our convenient laundry service.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-8">
-            {state.success ? (
-              <SuccessScreen
-                formData={state}
-                confirmationMessage={state.confirmationMessage}
-                orderTotal={state.orderTotal}
-              />
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-8">
-                {/* Stepper */}
-                <div className="flex items-center justify-between mb-6">
-                  {steps.map((step, idx) => (
-                    <div key={step.title} className="flex-1 flex flex-col items-center">
-                      <div className={`w-8 h-8 flex items-center justify-center rounded-full border-2 ${currentStep === idx ? 'bg-blue-900 text-white border-blue-900' : 'bg-white text-blue-900 border-blue-300'} font-bold mb-1`}>{idx + 1}</div>
-                      <span className={`text-xs ${currentStep === idx ? 'text-blue-900 font-semibold' : 'text-blue-500'}`}>{step.title}</span>
-                    </div>
-                  ))}
+            {/* Stepper */}
+            <div className="flex items-center justify-between mb-6">
+              {steps.map((stepObj, idx) => (
+                <div key={stepObj.title} className="flex-1 flex flex-col items-center">
+                  <div className={`w-8 h-8 flex items-center justify-center rounded-full border-2 ${currentStep === idx ? 'bg-blue-900 text-white border-blue-900' : 'bg-white text-blue-900 border-blue-300'} font-bold mb-1`}>{idx + 1}</div>
+                  <span className={`text-xs ${currentStep === idx ? 'text-blue-900 font-semibold' : 'text-blue-500'}`}>{stepObj.title}</span>
                 </div>
-                {/* Step Content */}
-                {(!user && currentStep === 0) && (
-                  <CustomerInfoStep formData={state} onChange={handleInputChange} errors={state.errors} />
+              ))}
+            </div>
+            {/* Step Content */}
+            {renderStepContent()}
+            {/* Navigation Buttons */}
+            {step === "form" && currentStep < steps.length - 1 && (
+              <div className="flex justify-between mt-6">
+                {currentStep > 0 && (
+                  <Button type="button" variant="outline" onClick={handlePrevStep} className="border-blue-300 text-blue-900 hover:bg-blue-200">
+                    Previous
+                  </Button>
                 )}
-                {(user ? currentStep === 0 : currentStep === 1) && (
-                  <OrderDetailsStep formData={state} onChange={handleInputChange} errors={state.errors} />
+                <Button type="button" onClick={handleNextStep} className="bg-blue-900 hover:bg-blue-800 text-white shadow-md">
+                  Next
+                </Button>
+              </div>
+            )}
+            {step === "form" && currentStep === steps.length - 1 && (
+              <div className="flex justify-start mt-6">
+                {currentStep > 0 && (
+                  <Button type="button" variant="outline" onClick={handlePrevStep} className="border-blue-300 text-blue-900 hover:bg-blue-200">
+                    Previous
+                  </Button>
                 )}
-                {(user ? currentStep === 1 : currentStep === 2) && (
-                  <AddressInstructionsStep formData={state} onChange={handleInputChange} errors={state.errors} />
-                )}
-                {(user ? currentStep === 2 : currentStep === 3) && (
-                  <OrderSummaryAndPaymentStep formData={state} errors={state.errors} onSubmit={handleSubmit} />
-                )}
-                {/* Navigation Buttons */}
-                {currentStep < steps.length - 1 ? (
-                  <div className="flex justify-between mt-6">
-                    {currentStep > 0 && (
-                      <Button type="button" variant="outline" onClick={handlePrevStep} className="border-blue-300 text-blue-900 hover:bg-blue-200">
-                        Previous
-                      </Button>
-                    )}
-                    <Button type="button" onClick={handleNextStep} className="bg-blue-900 hover:bg-blue-800 text-white shadow-md">
-                      Next
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex justify-start mt-6">
-                    {currentStep > 0 && (
-                      <Button type="button" variant="outline" onClick={handlePrevStep} className="border-blue-300 text-blue-900 hover:bg-blue-200">
-                        Previous
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </form>
+              </div>
             )}
           </CardContent>
         </Card>

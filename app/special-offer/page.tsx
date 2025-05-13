@@ -21,8 +21,8 @@ export default function SpecialOfferPage() {
   endDate.setDate(endDate.getDate() + 3)
 
   // Example: these would come from your admin/dashboard logic or API
-  const specialPrice = 99
-  const offerDescription = "Refresh & Sanitize 5 Comforters for Just $99 (normally $199). Free pickup & delivery included."
+  const specialPrice = 79
+  const offerDescription = "Refresh & Sanitize 5 Comforters for Just $79 (normally $199). Free pickup & delivery included."
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-white">
@@ -51,7 +51,7 @@ export default function SpecialOfferPage() {
               <h1 className="text-5xl md:text-6xl font-bold text-gray-900 tracking-tight mb-6">
                 Refresh & Sanitize 
                 <span className="text-blue-600"> 5 Comforters</span>
-                <br />for Just $99
+                <br />for Just $79
               </h1>
               
               <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-2xl mx-auto">
@@ -64,7 +64,7 @@ export default function SpecialOfferPage() {
                   className="bg-blue-600 hover:bg-blue-700 text-white text-xl py-8 px-12 rounded-full shadow-lg hover:shadow-xl transform transition-all duration-200 hover:scale-105 group"
                   onClick={() => setModalOpen(true)}
                 >
-                  Book Your Cleaning Now - Save $100
+                  Book Your Cleaning Now - Save $120
                   <ArrowUpRight className="ml-2 h-6 w-6 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
                 </Button>
                 <p className="text-sm text-gray-500 mt-4">
@@ -102,10 +102,10 @@ export default function SpecialOfferPage() {
                 <CardHeader className="border-b border-blue-50 bg-gradient-to-r from-blue-50 to-blue-50/50">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <CardTitle className="text-3xl font-bold text-blue-900">$99</CardTitle>
+                      <CardTitle className="text-3xl font-bold text-blue-900">$79</CardTitle>
                       <CardDescription className="text-blue-700 text-lg">
                         <span className="line-through text-gray-500">$199</span>
-                        {" "}Save $100 today
+                        {" "}Save $120 today
                       </CardDescription>
                     </div>
                     <div className="bg-blue-600 text-white text-sm font-medium px-3 py-1 rounded-full">
@@ -300,7 +300,7 @@ export default function SpecialOfferPage() {
           className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 group"
           onClick={() => router.push("/register")}
         >
-          Book Now - Save $100 
+          Book Now - Save $120 
           <ArrowUpRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
         </Button>
       </div>

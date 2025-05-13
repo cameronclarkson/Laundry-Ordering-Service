@@ -14,12 +14,14 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [showRegister, setShowRegister] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [showForgot, setShowForgot] = useState(false)
   const { login } = useAuth()
   const { toast } = useToast()
   const [credentials, setCredentials] = useState({
     email: "",
     password: "",
   })
+  const [resetEmail, setResetEmail] = useState("")
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCredentials({
@@ -48,8 +50,69 @@ export function LoginForm() {
     }
   }
 
+  // Forgot password handler
+  const handleForgotPassword = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setIsLoading(true)
+    try {
+      const { supabase } = await import("@/lib/supabase")
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined,
+      })
+      if (error) throw error
+      toast({
+        title: "Password reset sent!",
+        description: "Check your email for a link to reset your password.",
+      })
+      setShowForgot(false)
+      setResetEmail("")
+    } catch (error) {
+      toast({
+        title: "Reset failed",
+        description: error instanceof Error ? error.message : "Could not send reset email",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   if (showRegister) {
     return <RegisterForm onBack={() => setShowRegister(false)} onSuccess={() => setShowRegister(false)} />
+  }
+
+  if (showForgot) {
+    return (
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle>Forgot Password?</CardTitle>
+          <CardDescription>Enter your email to receive a password reset link.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleForgotPassword} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="resetEmail">Email</Label>
+              <Input
+                id="resetEmail"
+                name="resetEmail"
+                type="email"
+                required
+                value={resetEmail}
+                onChange={e => setResetEmail(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col space-y-2 pt-4">
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? "Sending..." : "Send Reset Link"}
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => setShowForgot(false)}>
+                Back to Login
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -107,6 +170,9 @@ export function LoginForm() {
             </Button>
             <Button type="button" variant="ghost" onClick={() => setShowRegister(true)}>
               Don't have an account? Sign up
+            </Button>
+            <Button type="button" variant="link" className="text-blue-600 px-0" onClick={() => setShowForgot(true)}>
+              Forgot password?
             </Button>
           </div>
         </form>

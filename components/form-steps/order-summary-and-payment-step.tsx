@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js"
 
 const calculatePrice = (weight: string) => {
   const pricePerPound = 1.75
@@ -13,23 +14,60 @@ const calculatePrice = (weight: string) => {
   return Math.max(averageWeight * pricePerPound, 17.5).toFixed(2)
 }
 
-export function OrderSummaryAndPaymentStep({ formData, errors, onSubmit }) {
-  const [cardNumber, setCardNumber] = React.useState("")
-  const [expiryDate, setExpiryDate] = React.useState("")
-  const [cvc, setCvc] = React.useState("")
-  const [error, setError] = React.useState(null)
-  const [isSubmitting, setIsSubmitting] = React.useState(false)
+interface OrderSummaryAndPaymentStepProps {
+  formData: any
+  errors: any
+  onPaymentSuccess: () => void
+}
 
-  const handlePayNowClick = async (e: React.MouseEvent) => {
+export function OrderSummaryAndPaymentStep({ formData, errors, onPaymentSuccess }: OrderSummaryAndPaymentStepProps) {
+  const stripe = useStripe()
+  const elements = useElements()
+  const [processing, setProcessing] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+
+  const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!cardNumber || !expiryDate || !cvc) {
-      setError("Please fill in all payment details")
+    setProcessing(true)
+    setError(null)
+    if (!stripe || !elements) {
+      setError("Stripe not loaded")
+      setProcessing(false)
       return
     }
-    setError(null)
-    setIsSubmitting(true)
-    await onSubmit(e)
-    setIsSubmitting(false)
+    const cardElement = elements.getElement(CardElement)
+    if (!cardElement) {
+      setError("Card element not found")
+      setProcessing(false)
+      return
+    }
+    const clientSecret = (stripe as any)?._clientSecret || undefined
+    if (!clientSecret) {
+      setError("No payment intent available")
+      setProcessing(false)
+      return
+    }
+    const { paymentIntent, error: stripeError } = await stripe.confirmCardPayment(clientSecret, {
+      payment_method: {
+        card: cardElement,
+        billing_details: {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+        },
+      },
+    })
+    if (stripeError) {
+      setError(stripeError.message || "Payment failed")
+      setProcessing(false)
+      return
+    }
+    if (paymentIntent && paymentIntent.status === "succeeded") {
+      onPaymentSuccess()
+    } else {
+      setError("Payment did not succeed")
+    }
+    setProcessing(false)
   }
 
   return (
@@ -72,39 +110,13 @@ export function OrderSummaryAndPaymentStep({ formData, errors, onSubmit }) {
           </div>
         </CardContent>
       </Card>
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Payment Details</h3>
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="cardNumber">Card Number</Label>
-            <Input
-              id="cardNumber"
-              placeholder="1234 5678 9012 3456"
-              value={cardNumber}
-              onChange={(e) => setCardNumber(e.target.value)}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="expiryDate">Expiry Date</Label>
-              <Input
-                id="expiryDate"
-                placeholder="MM/YY"
-                value={expiryDate}
-                onChange={(e) => setExpiryDate(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="cvc">CVC</Label>
-              <Input id="cvc" placeholder="123" value={cvc} onChange={(e) => setCvc(e.target.value)} />
-            </div>
-          </div>
-        </div>
-        {error && <div className="text-red-500 mt-4">{error}</div>}
-        <Button onClick={handlePayNowClick} className="mt-6 w-full" variant="default" disabled={isSubmitting}>
-          {isSubmitting ? "Processing..." : "Pay Now"}
+      <form onSubmit={handlePayment} className="space-y-6">
+        <CardElement options={{ hidePostalCode: true }} className="p-3 border rounded-md bg-white" />
+        {error && <div className="text-red-500 mt-2 text-sm">{error}</div>}
+        <Button type="submit" className="w-full" disabled={processing}>
+          {processing ? "Processing..." : "Pay Now"}
         </Button>
-      </div>
+      </form>
     </div>
   )
 }
