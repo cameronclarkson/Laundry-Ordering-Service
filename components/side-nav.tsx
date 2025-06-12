@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
+import Image from "next/image"
 
 interface SideNavProps {
   activeView: string
@@ -29,6 +30,16 @@ export function SideNav({ activeView, setActiveView }: SideNavProps) {
     <>
       {/* Desktop sidebar */}
       <div className="hidden lg:flex h-screen w-[200px] flex-col fixed left-0 top-0 border-r pt-8 p-4 bg-gradient-to-b from-blue-200 via-white to-white">
+        {/* Add the logo here */}
+        <div className="flex items-center justify-center h-20 mb-4">
+          <Image
+            src="/images/logo.svg"
+            alt="Laundry Service Logo"
+            width={150}
+            height={84}
+            priority
+          />
+        </div>
         {/* Main Navigation */}
         <nav className="flex-1">
           <div className="space-y-2">

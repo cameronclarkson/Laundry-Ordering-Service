@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import Image from "next/image"
 
 export function AdminSidebar() {
   const router = useRouter()
@@ -12,7 +13,13 @@ export function AdminSidebar() {
   return (
     <aside className="h-screen w-[220px] flex flex-col border-r bg-gradient-to-b from-blue-200 via-white to-white shadow-xl">
       <div className="flex items-center justify-center h-20 border-b border-blue-300">
-        <h2 className="text-2xl font-bold text-blue-900">Admin</h2>
+        <Image
+          src="/images/logo.svg"
+          alt="Laundry Service Logo"
+          width={150}
+          height={84}
+          priority
+        />
       </div>
       <nav className="flex-1 px-2 py-4">
         <div className="space-y-1">
