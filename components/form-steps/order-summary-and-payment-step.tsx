@@ -18,9 +18,10 @@ interface OrderSummaryAndPaymentStepProps {
   formData: any
   errors: any
   onPaymentSuccess: () => void
+  clientSecret: string
 }
 
-export function OrderSummaryAndPaymentStep({ formData, errors, onPaymentSuccess }: OrderSummaryAndPaymentStepProps) {
+export function OrderSummaryAndPaymentStep({ formData, errors, onPaymentSuccess, clientSecret }: OrderSummaryAndPaymentStepProps) {
   const stripe = useStripe()
   const elements = useElements()
   const [processing, setProcessing] = React.useState(false)
@@ -41,7 +42,6 @@ export function OrderSummaryAndPaymentStep({ formData, errors, onPaymentSuccess 
       setProcessing(false)
       return
     }
-    const clientSecret = (stripe as any)?._clientSecret || undefined
     if (!clientSecret) {
       setError("No payment intent available")
       setProcessing(false)

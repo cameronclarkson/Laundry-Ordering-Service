@@ -6,111 +6,118 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
 
-export function AddressInstructionsStep({ formData, onChange, errors }) {
+interface AddressInstructionsStepProps {
+  formData: any; // Using any for now, will refine if necessary
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement> | { target: { name: string; value: any } }) => void;
+  errors: any;
+}
+
+export function AddressInstructionsStep({ formData, onChange, errors }: AddressInstructionsStepProps) {
+  console.log("AddressInstructionsStep received formData:", formData);
   return (
     <div className="space-y-6">
       {/* Address Section */}
       <div className="space-y-4">
         <h3 className="text-base font-medium">Delivery Address</h3>
-        <div className="group/field grid gap-2" data-invalid={!!errors?.deliveryAddress?.addressLine1}>
+        <div className="group/field grid gap-2" data-invalid={!!errors?.addressLine1}>
           <Label htmlFor="addressLine1" className="group-data-[invalid=true]/field:text-destructive">
             Address Line 1 <span aria-hidden="true">*</span>
           </Label>
           <Input
             id="addressLine1"
-            name="deliveryAddress.addressLine1"
-            value={formData.deliveryAddress?.addressLine1}
+            name="addressLine1"
+            value={formData.addressLine1}
             onChange={onChange}
             placeholder="123 Main St"
             className="group-data-[invalid=true]/field:border-destructive focus-visible:group-data-[invalid=true]/field:ring-destructive"
-            aria-invalid={!!errors?.deliveryAddress?.addressLine1}
+            aria-invalid={!!errors?.addressLine1}
             aria-errormessage="error-addressLine1"
           />
-          {errors?.deliveryAddress?.addressLine1 && (
+          {errors?.addressLine1 && (
             <p id="error-addressLine1" className="text-destructive text-sm">
-              {errors.deliveryAddress.addressLine1}
+              {errors.addressLine1}
             </p>
           )}
         </div>
-        <div className="group/field grid gap-2" data-invalid={!!errors?.deliveryAddress?.addressLine2}>
+        <div className="group/field grid gap-2" data-invalid={!!errors?.addressLine2}>
           <Label htmlFor="addressLine2" className="group-data-[invalid=true]/field:text-destructive">
             Address Line 2
           </Label>
           <Input
             id="addressLine2"
-            name="deliveryAddress.addressLine2"
-            value={formData.deliveryAddress?.addressLine2}
+            name="addressLine2"
+            value={formData.addressLine2}
             onChange={onChange}
             placeholder="Apt 4B"
             className="group-data-[invalid=true]/field:border-destructive focus-visible:group-data-[invalid=true]/field:ring-destructive"
-            aria-invalid={!!errors?.deliveryAddress?.addressLine2}
+            aria-invalid={!!errors?.addressLine2}
             aria-errormessage="error-addressLine2"
           />
-          {errors?.deliveryAddress?.addressLine2 && (
+          {errors?.addressLine2 && (
             <p id="error-addressLine2" className="text-destructive text-sm">
-              {errors.deliveryAddress.addressLine2}
+              {errors.addressLine2}
             </p>
           )}
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <div className="group/field grid gap-2" data-invalid={!!errors?.deliveryAddress?.city}>
+          <div className="group/field grid gap-2" data-invalid={!!errors?.city}>
             <Label htmlFor="city" className="group-data-[invalid=true]/field:text-destructive">
               City <span aria-hidden="true">*</span>
             </Label>
             <Input
               id="city"
-              name="deliveryAddress.city"
-              value={formData.deliveryAddress?.city}
+              name="city"
+              value={formData.city}
               onChange={onChange}
               placeholder="New York"
               className="group-data-[invalid=true]/field:border-destructive focus-visible:group-data-[invalid=true]/field:ring-destructive"
-              aria-invalid={!!errors?.deliveryAddress?.city}
+              aria-invalid={!!errors?.city}
               aria-errormessage="error-city"
             />
-            {errors?.deliveryAddress?.city && (
+            {errors?.city && (
               <p id="error-city" className="text-destructive text-sm">
-                {errors.deliveryAddress.city}
+                {errors.city}
               </p>
             )}
           </div>
-          <div className="group/field grid gap-2" data-invalid={!!errors?.deliveryAddress?.state}>
+          <div className="group/field grid gap-2" data-invalid={!!errors?.state}>
             <Label htmlFor="state" className="group-data-[invalid=true]/field:text-destructive">
               State <span aria-hidden="true">*</span>
             </Label>
             <Input
               id="state"
-              name="deliveryAddress.state"
-              value={formData.deliveryAddress?.state}
+              name="state"
+              value={formData.state}
               onChange={onChange}
               placeholder="NY"
               className="group-data-[invalid=true]/field:border-destructive focus-visible:group-data-[invalid=true]/field:ring-destructive"
-              aria-invalid={!!errors?.deliveryAddress?.state}
+              aria-invalid={!!errors?.state}
               aria-errormessage="error-state"
             />
-            {errors?.deliveryAddress?.state && (
+            {errors?.state && (
               <p id="error-state" className="text-destructive text-sm">
-                {errors.deliveryAddress.state}
+                {errors.state}
               </p>
             )}
           </div>
         </div>
-        <div className="group/field grid gap-2" data-invalid={!!errors?.deliveryAddress?.zipCode}>
+        <div className="group/field grid gap-2" data-invalid={!!errors?.zipCode}>
           <Label htmlFor="zipCode" className="group-data-[invalid=true]/field:text-destructive">
             ZIP Code <span aria-hidden="true">*</span>
           </Label>
           <Input
             id="zipCode"
-            name="deliveryAddress.zipCode"
-            value={formData.deliveryAddress?.zipCode}
+            name="zipCode"
+            value={formData.zipCode}
             onChange={onChange}
             placeholder="10001"
             className="group-data-[invalid=true]/field:border-destructive focus-visible:group-data-[invalid=true]/field:ring-destructive"
-            aria-invalid={!!errors?.deliveryAddress?.zipCode}
+            aria-invalid={!!errors?.zipCode}
             aria-errormessage="error-zipCode"
           />
-          {errors?.deliveryAddress?.zipCode && (
+          {errors?.zipCode && (
             <p id="error-zipCode" className="text-destructive text-sm">
-              {errors.deliveryAddress.zipCode}
+              {errors.zipCode}
             </p>
           )}
         </div>
@@ -152,34 +159,20 @@ export function AddressInstructionsStep({ formData, onChange, errors }) {
           <Label className="group-data-[invalid=true]/field:text-destructive">
             Water Temperature <span aria-hidden="true">*</span>
           </Label>
-          <RadioGroup
+          <Select
             name="waterTemp"
             value={formData.waterTemp}
             onValueChange={(value) => onChange({ target: { name: "waterTemp", value } })}
-            className="grid grid-cols-3 gap-2"
           >
-            <Label
-              htmlFor="water-cold"
-              className="flex items-center justify-center border rounded-md p-3 cursor-pointer hover:bg-muted [&:has(:checked)]:bg-primary/10"
-            >
-              <RadioGroupItem value="cold" id="water-cold" className="sr-only" />
-              Cold
-            </Label>
-            <Label
-              htmlFor="water-warm"
-              className="flex items-center justify-center border rounded-md p-3 cursor-pointer hover:bg-muted [&:has(:checked)]:bg-primary/10"
-            >
-              <RadioGroupItem value="warm" id="water-warm" className="sr-only" />
-              Warm
-            </Label>
-            <Label
-              htmlFor="water-hot"
-              className="flex items-center justify-center border rounded-md p-3 cursor-pointer hover:bg-muted [&:has(:checked)]:bg-primary/10"
-            >
-              <RadioGroupItem value="hot" id="water-hot" className="sr-only" />
-              Hot
-            </Label>
-          </RadioGroup>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select water temperature" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="cold">Cold</SelectItem>
+              <SelectItem value="warm">Warm</SelectItem>
+              <SelectItem value="hot">Hot</SelectItem>
+            </SelectContent>
+          </Select>
           {errors?.waterTemp && (
             <p id="error-waterTemp" className="text-destructive text-sm">
               {errors.waterTemp}
@@ -191,34 +184,20 @@ export function AddressInstructionsStep({ formData, onChange, errors }) {
           <Label className="group-data-[invalid=true]/field:text-destructive">
             Dryer Temperature <span aria-hidden="true">*</span>
           </Label>
-          <RadioGroup
+          <Select
             name="dryTemp"
             value={formData.dryTemp}
             onValueChange={(value) => onChange({ target: { name: "dryTemp", value } })}
-            className="grid grid-cols-3 gap-2"
           >
-            <Label
-              htmlFor="dry-low"
-              className="flex items-center justify-center border rounded-md p-3 cursor-pointer hover:bg-muted [&:has(:checked)]:bg-primary/10"
-            >
-              <RadioGroupItem value="low" id="dry-low" className="sr-only" />
-              Low
-            </Label>
-            <Label
-              htmlFor="dry-medium"
-              className="flex items-center justify-center border rounded-md p-3 cursor-pointer hover:bg-muted [&:has(:checked)]:bg-primary/10"
-            >
-              <RadioGroupItem value="medium" id="dry-medium" className="sr-only" />
-              Medium
-            </Label>
-            <Label
-              htmlFor="dry-high"
-              className="flex items-center justify-center border rounded-md p-3 cursor-pointer hover:bg-muted [&:has(:checked)]:bg-primary/10"
-            >
-              <RadioGroupItem value="high" id="dry-high" className="sr-only" />
-              High
-            </Label>
-          </RadioGroup>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select dryer temperature" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+            </SelectContent>
+          </Select>
           {errors?.dryTemp && (
             <p id="error-dryTemp" className="text-destructive text-sm">
               {errors.dryTemp}
@@ -230,34 +209,20 @@ export function AddressInstructionsStep({ formData, onChange, errors }) {
           <Label className="group-data-[invalid=true]/field:text-destructive">
             Bleach Option <span aria-hidden="true">*</span>
           </Label>
-          <RadioGroup
+          <Select
             name="bleachOption"
             value={formData.bleachOption}
             onValueChange={(value) => onChange({ target: { name: "bleachOption", value } })}
-            className="grid grid-cols-3 gap-2"
           >
-            <Label
-              htmlFor="no-bleach"
-              className="flex items-center justify-center border rounded-md p-3 cursor-pointer hover:bg-muted [&:has(:checked)]:bg-primary/10"
-            >
-              <RadioGroupItem value="no_bleach" id="no-bleach" className="sr-only" />
-              No Bleach
-            </Label>
-            <Label
-              htmlFor="color-safe"
-              className="flex items-center justify-center border rounded-md p-3 cursor-pointer hover:bg-muted [&:has(:checked)]:bg-primary/10"
-            >
-              <RadioGroupItem value="color_safe" id="color-safe" className="sr-only" />
-              Color Safe
-            </Label>
-            <Label
-              htmlFor="white-bleach"
-              className="flex items-center justify-center border rounded-md p-3 cursor-pointer hover:bg-muted [&:has(:checked)]:bg-primary/10"
-            >
-              <RadioGroupItem value="white_bleach" id="white-bleach" className="sr-only" />
-              White Bleach
-            </Label>
-          </RadioGroup>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select bleach option" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="no_bleach">No Bleach</SelectItem>
+              <SelectItem value="color_safe">Color-Safe</SelectItem>
+              <SelectItem value="chlorine">Chlorine</SelectItem>
+            </SelectContent>
+          </Select>
           {errors?.bleachOption && (
             <p id="error-bleachOption" className="text-destructive text-sm">
               {errors.bleachOption}
@@ -265,8 +230,10 @@ export function AddressInstructionsStep({ formData, onChange, errors }) {
           )}
         </div>
 
-        <div className="space-y-2">
-          <Label>Additional Options</Label>
+        <Separator />
+
+        <div className="space-y-4">
+          <h3 className="text-base font-medium">Other Preferences</h3>
           <div className="flex items-center space-x-2">
             <Checkbox
               id="fabricSoftener"
@@ -274,7 +241,7 @@ export function AddressInstructionsStep({ formData, onChange, errors }) {
               checked={formData.fabricSoftener}
               onCheckedChange={(checked) => onChange({ target: { name: "fabricSoftener", value: checked } })}
             />
-            <Label htmlFor="fabricSoftener">Use Fabric Softener</Label>
+            <Label htmlFor="fabricSoftener">Add fabric softener</Label>
           </div>
           <div className="flex items-center space-x-2">
             <Checkbox
@@ -283,13 +250,13 @@ export function AddressInstructionsStep({ formData, onChange, errors }) {
               checked={formData.dryerSheets}
               onCheckedChange={(checked) => onChange({ target: { name: "dryerSheets", value: checked } })}
             />
-            <Label htmlFor="dryerSheets">Use Dryer Sheets</Label>
+            <Label htmlFor="dryerSheets">Add dryer sheets</Label>
           </div>
         </div>
 
         <div className="group/field grid gap-2" data-invalid={!!errors?.scent}>
           <Label htmlFor="scent" className="group-data-[invalid=true]/field:text-destructive">
-            Scent Preference
+            Scent
           </Label>
           <Select
             name="scent"
@@ -297,13 +264,12 @@ export function AddressInstructionsStep({ formData, onChange, errors }) {
             onValueChange={(value) => onChange({ target: { name: "scent", value } })}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select scent" />
+              <SelectValue placeholder="Select scent (optional)" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="unscented">Unscented</SelectItem>
               <SelectItem value="fresh_linen">Fresh Linen</SelectItem>
               <SelectItem value="lavender">Lavender</SelectItem>
-              <SelectItem value="spring_meadow">Spring Meadow</SelectItem>
             </SelectContent>
           </Select>
           {errors?.scent && (
@@ -312,13 +278,7 @@ export function AddressInstructionsStep({ formData, onChange, errors }) {
             </p>
           )}
         </div>
-      </div>
 
-      <Separator />
-
-      {/* Special Instructions Section */}
-      <div className="space-y-4">
-        <h3 className="text-base font-medium">Additional Instructions</h3>
         <div className="group/field grid gap-2" data-invalid={!!errors?.specialInstructions}>
           <Label htmlFor="specialInstructions" className="group-data-[invalid=true]/field:text-destructive">
             Special Instructions
@@ -328,7 +288,7 @@ export function AddressInstructionsStep({ formData, onChange, errors }) {
             name="specialInstructions"
             value={formData.specialInstructions}
             onChange={onChange}
-            placeholder="Any special instructions for your order?"
+            placeholder="e.g., separate delicates, hang dry, etc."
             className="group-data-[invalid=true]/field:border-destructive focus-visible:group-data-[invalid=true]/field:ring-destructive"
             aria-invalid={!!errors?.specialInstructions}
             aria-errormessage="error-specialInstructions"

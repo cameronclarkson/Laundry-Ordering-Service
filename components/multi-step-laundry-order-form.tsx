@@ -61,10 +61,10 @@ const initialState = {
   city: "",
   state: "",
   zipCode: "",
-  detergent: "tide",
-  waterTemp: "cold",
-  dryTemp: "medium",
-  bleachOption: "no_bleach",
+  detergent: "",
+  waterTemp: "",
+  dryTemp: "",
+  bleachOption: "",
   fabricSoftener: false,
   dryerSheets: false,
   scent: "unscented",
@@ -108,70 +108,71 @@ export function MultiStepLaundryOrderForm({ className, onBack }: MultiStepLaundr
     }
   }
 
-  const handleNextStep = () => {
-    setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1))
-  }
-
-  const handlePrevStep = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 0))
-  }
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement> | { target: { name: string; value: any } }) => {
+    console.log("handleInputChange called with:", e.target.name, e.target.value);
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     })
   }
 
-  const validate = () => {
+  const validateStep = (stepIndex: number) => {
     const newErrors: any = {}
-    if (!formData.name) newErrors.name = "Name is required"
-    if (!formData.email) newErrors.email = "Email is required"
-    if (!formData.phone) newErrors.phone = "Phone is required"
+    let actualStepIndex = stepIndex
+    if (user) {
+      actualStepIndex = stepIndex + 1 // Adjust index for logged-in users, as they skip CustomerInfoStep
+    }
+
+    if (actualStepIndex === 0) { // Customer Information
+      if (!formData.name) newErrors.name = "Name is required"
+      if (!formData.email) newErrors.email = "Email is required"
+      if (!formData.phone) newErrors.phone = "Phone is required"
+    } else if (actualStepIndex === 1) { // Order Details
+      if (!formData.weight) newErrors.weight = "Weight is required"
+    } else if (actualStepIndex === 2) { // Address & Instructions
+      if (!formData.addressLine1) newErrors.addressLine1 = "Address is required"
+      if (!formData.city) newErrors.city = "City is required"
+      if (!formData.state) newErrors.state = "State is required"
+      if (!formData.zipCode) newErrors.zipCode = "ZIP code is required"
+      if (!formData.detergent) newErrors.detergent = "Detergent is required"
+      if (!formData.waterTemp) newErrors.waterTemp = "Water temperature is required"
+      if (!formData.dryTemp) newErrors.dryTemp = "Dryer temperature is required"
+      if (!formData.bleachOption) newErrors.bleachOption = "Bleach option is required"
+    }
+    return newErrors
+  }
+
+  const validateAll = () => {
+    const newErrors: any = {}
+    if (!user) {
+      if (!formData.name) newErrors.name = "Name is required"
+      if (!formData.email) newErrors.email = "Email is required"
+      if (!formData.phone) newErrors.phone = "Phone is required"
+    }
     if (!formData.weight) newErrors.weight = "Weight is required"
     if (!formData.addressLine1) newErrors.addressLine1 = "Address is required"
     if (!formData.city) newErrors.city = "City is required"
     if (!formData.state) newErrors.state = "State is required"
     if (!formData.zipCode) newErrors.zipCode = "ZIP code is required"
+    if (!formData.detergent) newErrors.detergent = "Detergent is required"
+    if (!formData.waterTemp) newErrors.waterTemp = "Water temperature is required"
+    if (!formData.dryTemp) newErrors.dryTemp = "Dryer temperature is required"
+    if (!formData.bleachOption) newErrors.bleachOption = "Bleach option is required"
     return newErrors
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setErrors({})
-    setPaymentError(null)
-    const validationErrors = validate()
+  const handleNextStep = () => {
+    const validationErrors = validateStep(currentStep)
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors)
       return
     }
-    setIsLoading(true)
-    try {
-      // Calculate price (example: $1.75/lb, min $17.50)
-      const [min, max] = formData.weight.split("-").map(Number)
-      const averageWeight = max ? (min + max) / 2 : min
-      const price = Math.max(averageWeight * 1.75, 17.5)
-      // Create payment intent
-      const res = await fetch("/api/create-payment-intent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: Math.round(price * 100),
-          email: user?.email || formData.email,
-          offer: `Laundry Order: ${formData.weight} lbs, ${formData.serviceType}`,
-          name: formData.name,
-          phone: formData.phone,
-        }),
-      })
-      const data = await res.json()
-      if (!data.clientSecret) throw new Error(data.error || "Could not start payment")
-      setClientSecret(data.clientSecret)
-      setStep("payment")
-    } catch (err: any) {
-      setPaymentError(err.message)
-    } finally {
-      setIsLoading(false)
-    }
+    setErrors({}) // Clear errors if validation passes for current step
+    setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1))
+  }
+
+  const handlePrevStep = () => {
+    setCurrentStep((prev) => Math.max(prev - 1, 0))
   }
 
   function StripePaymentForm({ onSuccess }: { onSuccess: () => void }) {
@@ -184,33 +185,42 @@ export function MultiStepLaundryOrderForm({ className, onBack }: MultiStepLaundr
       e.preventDefault()
       setProcessing(true)
       setError(null)
+      console.log("Attempting to confirm payment...");
       if (!stripe || !elements) {
+        console.error("Stripe or Elements not loaded.");
         setError("Stripe not loaded")
         setProcessing(false)
         return
       }
       const cardElement = elements.getElement(CardElement)
       if (!cardElement) {
+        console.error("Card element not found.");
         setError("Card element not found")
         setProcessing(false)
         return
       }
-      const { paymentIntent, error: stripeError } = await stripe.confirmCardPayment(clientSecret!, {
-        payment_method: {
-          card: cardElement,
-          billing_details: {
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
+      console.log("Calling stripe.confirmCardPayment with clientSecret:", clientSecret);
+      const { paymentIntent, error: stripeError } = await stripe.confirmCardPayment(clientSecret!,
+        {
+          payment_method: {
+            card: cardElement,
+            billing_details: {
+              name: formData.name,
+              email: formData.email,
+              phone: formData.phone,
+            },
           },
-        },
-      })
+        }
+      );
+      console.log("stripe.confirmCardPayment result: ", { paymentIntent, stripeError });
+
       if (stripeError) {
         setError(stripeError.message || "Payment failed")
         setProcessing(false)
         return
       }
       if (paymentIntent && paymentIntent.status === "succeeded") {
+        console.log("Payment succeeded!");
         onSuccess()
       } else {
         setError("Payment did not succeed")
@@ -249,6 +259,7 @@ export function MultiStepLaundryOrderForm({ className, onBack }: MultiStepLaundr
                   formData={formData}
                   errors={errors}
                   onPaymentSuccess={() => setStep("success")}
+                  clientSecret={clientSecret}
                 />
               </Elements>
             ) : (
@@ -280,33 +291,50 @@ export function MultiStepLaundryOrderForm({ className, onBack }: MultiStepLaundr
                   type="button"
                   className="mt-6 w-full"
                   onClick={async () => {
-                    setIsLoading(true)
+                    setErrors({}) // Clear previous errors
                     setPaymentError(null)
+                    const validationErrors = validateAll()
+                    if (Object.keys(validationErrors).length > 0) {
+                      setErrors(validationErrors)
+                      return
+                    }
+                    setIsLoading(true)
                     try {
                       // Calculate price (example: $1.75/lb, min $17.50)
                       const [min, max] = formData.weight.split("-").map(Number)
                       const averageWeight = max ? (min + max) / 2 : min
                       const price = Math.max(averageWeight * 1.75, 17.5)
+                      
+                      // Log the payload before sending
+                      const payload = {
+                        amount: Math.round(price * 100),
+                        email: user?.email || formData.email,
+                        offer: `Laundry Order: ${formData.weight} lbs, ${formData.serviceType}`,
+                        name: formData.name,
+                        phone: formData.phone,
+                      };
+                      console.log("Sending payload to create-payment-intent:", payload);
+
                       // Create payment intent
                       const res = await fetch("/api/create-payment-intent", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          amount: Math.round(price * 100),
-                          email: user?.email || formData.email,
-                          offer: `Laundry Order: ${formData.weight} lbs, ${formData.serviceType}`,
-                          name: formData.name,
-                          phone: formData.phone,
-                        }),
+                        body: JSON.stringify(payload),
                       })
+                      
+                      // Log the raw response
+                      const rawResponse = await res.text();
+                      console.log("Raw response from create-payment-intent:", rawResponse);
+
+                      const data = JSON.parse(rawResponse);
+
                       if (!res.ok) {
-                        const err = await res.json()
-                        throw new Error(err.error || "Failed to create payment intent.")
+                        throw new Error(data.error || "Failed to create payment intent.")
                       }
-                      const data = await res.json()
                       if (!data.clientSecret) throw new Error(data.error || "Could not start payment")
                       setClientSecret(data.clientSecret)
                     } catch (err: any) {
+                      console.error("Error creating payment intent:", err);
                       setPaymentError(err.message || "An unexpected error occurred. Please try again.")
                     } finally {
                       setIsLoading(false)
@@ -361,23 +389,16 @@ export function MultiStepLaundryOrderForm({ className, onBack }: MultiStepLaundr
             {/* Step Content */}
             {renderStepContent()}
             {/* Navigation Buttons */}
-            {step === "form" && currentStep < steps.length - 1 && (
+            {step === "form" && (
               <div className="flex justify-between mt-6">
                 {currentStep > 0 && (
                   <Button type="button" variant="outline" onClick={handlePrevStep} className="border-blue-300 text-blue-900 hover:bg-blue-200">
                     Previous
                   </Button>
                 )}
-                <Button type="button" onClick={handleNextStep} className="bg-blue-900 hover:bg-blue-800 text-white shadow-md">
-                  Next
-                </Button>
-              </div>
-            )}
-            {step === "form" && currentStep === steps.length - 1 && (
-              <div className="flex justify-start mt-6">
-                {currentStep > 0 && (
-                  <Button type="button" variant="outline" onClick={handlePrevStep} className="border-blue-300 text-blue-900 hover:bg-blue-200">
-                    Previous
+                {currentStep < steps.length - 1 && (
+                  <Button type="button" onClick={handleNextStep} className="bg-blue-900 hover:bg-blue-800 text-white shadow-md">
+                    Next
                   </Button>
                 )}
               </div>
