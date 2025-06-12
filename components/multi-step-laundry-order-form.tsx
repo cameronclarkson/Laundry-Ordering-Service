@@ -13,6 +13,7 @@ import { OrderSummaryAndPaymentStep } from "./form-steps/order-summary-and-payme
 import { SuccessScreen } from "./form-steps/success-screen"
 import { ArrowLeft } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
+import { getOrCreateCustomer, createOrder, createOrderItems } from "@/lib/db";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js"
 import { loadStripe } from "@stripe/stripe-js"
 import { Check } from "lucide-react"
@@ -258,7 +259,65 @@ export function MultiStepLaundryOrderForm({ className, onBack }: MultiStepLaundr
                 <OrderSummaryAndPaymentStep
                   formData={formData}
                   errors={errors}
-                  onPaymentSuccess={() => setStep("success")}
+                  onPaymentSuccess={async () => {
+                    setPaymentError(null); // Clear previous payment errors
+                    try {
+                      // Retrieve customer details
+                      const customerEmail = user?.email || formData.email;
+                      const fullAddress = `${formData.addressLine1}${formData.addressLine2 ? ', ' + formData.addressLine2 : ''}, ${formData.city}, ${formData.state} ${formData.zipCode}`;
+
+                      // Ensure formData.name is available, especially for logged-in users
+                      const customerName = user?.displayName || formData.name;
+                      if (!customerName) {
+                        // This case should ideally be handled by form validation earlier
+                        // or by ensuring user.displayName is always available for logged-in users.
+                        throw new Error("Customer name is missing.");
+                      }
+
+                      const customerId = await getOrCreateCustomer({
+                        name: customerName,
+                        email: customerEmail,
+                        phone: formData.phone, // Ensure phone is collected or optional in DB
+                        address: fullAddress,
+                      });
+
+                      // Calculate total amount
+                      const [min, max] = formData.weight.split("-").map(Number);
+                      const averageWeight = max ? (min + max) / 2 : min;
+                      const orderTotalNumber = parseFloat(Math.max(averageWeight * 1.75, 17.5).toFixed(2));
+
+                      // Create Order
+                      const orderData = {
+                        customer_id: customerId,
+                        total_amount: orderTotalNumber,
+                        status: "pending", // Or your desired initial status
+                        delivery_address: fullAddress,
+                        special_instructions: formData.specialInstructions || "",
+                      };
+                      const newOrder = await createOrder(orderData);
+
+                      if (newOrder && newOrder.id) {
+                        // Create Order Item(s)
+                        const orderItemData = [{
+                          order_id: newOrder.id,
+                          service_id: "00000000-0000-0000-0000-000000000000", // Placeholder Service ID
+                          quantity: 1, // Assuming a single item representing the whole order
+                          price: orderTotalNumber,
+                        }];
+                        await createOrderItems(orderItemData);
+                        console.log("Order details saved successfully for order ID:", newOrder.id);
+                        setStep("success"); // Proceed to success screen
+                      } else {
+                        throw new Error("Failed to create order or retrieve order ID.");
+                      }
+
+                    } catch (dbError: any) {
+                      console.error("Failed to save order details to database:", dbError);
+                      setPaymentError("Your payment was successful, but we encountered an issue saving your order details. Please contact support: " + dbError.message);
+                      // Do not proceed to setStep("success") here, error is shown via paymentError state
+                      // The OrderSummaryAndPaymentStep might need a way to show this error, or we rely on the existing paymentError display
+                    }
+                  }}
                   clientSecret={clientSecret}
                 />
               </Elements>

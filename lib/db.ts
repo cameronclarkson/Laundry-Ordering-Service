@@ -2,15 +2,31 @@ import { supabase } from './supabase'
 
 // Define the Order type based on your Supabase table structure
 export type Order = {
-  id: number
-  customer_id: number
-  status: 'pending' | 'processing' | 'completed' | 'cancelled'
-  total_amount: number
-  created_at: string
-  updated_at: string
-  delivery_address?: string
-  special_instructions?: string
-}
+  id: string; // UUID
+  customer_id: string; // UUID, foreign key to customers
+  status: string; // e.g., 'pending', 'processing', 'completed', 'cancelled'
+  total_amount: number;
+  delivery_address: string;
+  special_instructions?: string; // Optional
+  created_at: string; // Handled by Supabase
+};
+
+export type Customer = {
+  id: string; // UUID
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  created_at?: string; // Handled by Supabase
+};
+
+export type OrderItem = {
+  id: string; // UUID
+  order_id: string; // UUID, foreign key to orders
+  service_id: string; // UUID, foreign key to services (can be a placeholder for now)
+  quantity: number;
+  price: number; // Price for this item/service
+};
 
 // Fetch all orders
 export async function fetchOrders() {
@@ -47,7 +63,7 @@ export async function fetchOrders() {
 }
 
 // Fetch a single order by ID
-export async function fetchOrderById(id: number) {
+export async function fetchOrderById(id: string) {
   const { data, error } = await supabase
     .from('orders')
     .select(`
@@ -82,7 +98,7 @@ export async function fetchOrderById(id: number) {
 }
 
 // Create a new order
-export async function createOrder(order: Omit<Order, 'id' | 'created_at' | 'updated_at'>) {
+export async function createOrder(order: Omit<Order, 'id' | 'created_at'>) {
   const { data, error } = await supabase
     .from('orders')
     .insert(order)
@@ -97,7 +113,7 @@ export async function createOrder(order: Omit<Order, 'id' | 'created_at' | 'upda
 }
 
 // Update an order
-export async function updateOrder(id: number, updates: Partial<Order>) {
+export async function updateOrder(id: string, updates: Partial<Order>) {
   const { data, error } = await supabase
     .from('orders')
     .update(updates)
@@ -113,7 +129,7 @@ export async function updateOrder(id: number, updates: Partial<Order>) {
 }
 
 // Delete an order
-export async function deleteOrder(id: number) {
+export async function deleteOrder(id: string) {
   const { error } = await supabase
     .from('orders')
     .delete()
@@ -141,4 +157,58 @@ export async function loadAllData() {
     acc[table] = results[index]
     return acc
   }, {} as Record<string, any[]>)
-} 
+}
+
+// Get or create a customer
+export async function getOrCreateCustomer(customerData: Omit<Customer, 'id' | 'created_at'>): Promise<string> {
+  // Check if customer exists
+  const { data: existingCustomer, error: selectError } = await supabase
+    .from('customers')
+    .select('id')
+    .eq('email', customerData.email)
+    .single()
+
+  if (selectError && selectError.code !== 'PGRST116') { // PGRST116: 'No rows found'
+    throw new Error(`Error querying customer: ${selectError.message}`)
+  }
+
+  if (existingCustomer) {
+    return existingCustomer.id
+  }
+
+  // Create new customer
+  const { data: newCustomer, error: insertError } = await supabase
+    .from('customers')
+    .insert({
+      name: customerData.name,
+      email: customerData.email,
+      phone: customerData.phone,
+      address: customerData.address,
+    })
+    .select('id')
+    .single()
+
+  if (insertError) {
+    throw new Error(`Error creating customer: ${insertError.message}`)
+  }
+
+  if (!newCustomer) {
+    throw new Error('Failed to create customer and retrieve ID.')
+  }
+
+  return newCustomer.id
+}
+
+// Create order items
+export async function createOrderItems(orderItemsData: Array<Omit<OrderItem, 'id'>>): Promise<OrderItem[]> {
+  const { data, error } = await supabase
+    .from('order_items')
+    .insert(orderItemsData)
+    .select()
+
+  if (error) {
+    throw new Error(`Error creating order items: ${error.message}`)
+  }
+
+  return data as OrderItem[]
+}
