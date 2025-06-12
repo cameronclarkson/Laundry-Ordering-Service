@@ -159,6 +159,24 @@ export async function loadAllData() {
   }, {} as Record<string, any[]>)
 }
 
+// Fetch a customer by email
+export async function fetchCustomerByEmail(email: string): Promise<Customer | null> {
+  const { data, error } = await supabase
+    .from('customers')
+    .select('id, name, email, phone, address, created_at')
+    .eq('email', email)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') { // PGRST116: 'No rows found'
+      return null;
+    }
+    throw new Error(`Error fetching customer by email: ${error.message}`);
+  }
+
+  return data as Customer | null;
+}
+
 // Get or create a customer
 export async function getOrCreateCustomer(customerData: Omit<Customer, 'id' | 'created_at'>): Promise<string> {
   // Check if customer exists

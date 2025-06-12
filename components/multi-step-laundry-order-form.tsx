@@ -13,7 +13,7 @@ import { OrderSummaryAndPaymentStep } from "./form-steps/order-summary-and-payme
 import { SuccessScreen } from "./form-steps/success-screen"
 import { ArrowLeft } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
-import { getOrCreateCustomer, createOrder, createOrderItems } from "@/lib/db";
+import { getOrCreateCustomer, createOrder, createOrderItems, fetchCustomerByEmail } from "@/lib/db";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js"
 import { loadStripe } from "@stripe/stripe-js"
 import { Check } from "lucide-react"
@@ -262,24 +262,74 @@ export function MultiStepLaundryOrderForm({ className, onBack }: MultiStepLaundr
                   onPaymentSuccess={async () => {
                     setPaymentError(null); // Clear previous payment errors
                     try {
-                      // Retrieve customer details
-                      const customerEmail = user?.email || formData.email;
+                      // Define fullAddress early so it's available for all paths
                       const fullAddress = `${formData.addressLine1}${formData.addressLine2 ? ', ' + formData.addressLine2 : ''}, ${formData.city}, ${formData.state} ${formData.zipCode}`;
 
-                      // Ensure formData.name is available, especially for logged-in users
-                      const customerName = user?.displayName || formData.name;
-                      if (!customerName) {
-                        // This case should ideally be handled by form validation earlier
-                        // or by ensuring user.displayName is always available for logged-in users.
-                        throw new Error("Customer name is missing.");
+                      let customerId: string;
+                      let customerNameToUse: string;
+                      let customerEmailToUse: string;
+
+                      if (user && user.email) { // Check user and user.email
+                        console.log("Processing logged-in user:", user.email);
+                        const dbCustomer = await fetchCustomerByEmail(user.email);
+                        if (dbCustomer && dbCustomer.name) {
+                          console.log("Found customer in DB:", dbCustomer);
+                          customerId = dbCustomer.id;
+                          customerNameToUse = dbCustomer.name;
+                          customerEmailToUse = dbCustomer.email;
+                          // Optionally update formData if it's used elsewhere (e.g. for display on success screen if not using dbCustomer directly)
+                          // formData.name = dbCustomer.name;
+                          // formData.email = dbCustomer.email;
+                        } else {
+                          console.warn("Logged-in user's details not found in DB or name missing, attempting getOrCreateCustomer as fallback:", user.email);
+                          const nameForFallback = user.displayName || formData.name;
+                          if (!nameForFallback) {
+                              setPaymentError("Your user profile name is missing. Please update your profile or contact support.");
+                              throw new Error("Customer name for logged-in user could not be determined.");
+                          }
+                          // For a logged-in user, their email (user.email) is authoritative.
+                          // Address and phone might still come from the form for this specific order.
+                          customerId = await getOrCreateCustomer({
+                            name: nameForFallback,
+                            email: user.email, // Use authoritative email
+                            phone: formData.phone,
+                            address: fullAddress, // Use address from form
+                          });
+                          customerNameToUse = nameForFallback;
+                          customerEmailToUse = user.email;
+                          console.log("Fallback getOrCreateCustomer completed for logged-in user. Customer ID:", customerId, "Name used:", customerNameToUse);
+                        }
+                      } else {
+                        // Guest user path
+                        console.log("Processing guest user.");
+                        const guestName = formData.name;
+                        if (!guestName) {
+                          setPaymentError("Customer name is required. Please fill in your details.");
+                          throw new Error("Customer name is missing for guest user.");
+                        }
+                        const guestEmail = formData.email;
+                         if (!guestEmail) {
+                          setPaymentError("Customer email is required. Please fill in your details.");
+                          throw new Error("Customer email is missing for guest user.");
+                        }
+                        customerId = await getOrCreateCustomer({
+                          name: guestName,
+                          email: guestEmail,
+                          phone: formData.phone,
+                          address: fullAddress,
+                        });
+                        customerNameToUse = guestName;
+                        customerEmailToUse = guestEmail;
+                        console.log("getOrCreateCustomer completed for guest user. Customer ID:", customerId);
                       }
 
-                      const customerId = await getOrCreateCustomer({
-                        name: customerName,
-                        email: customerEmail,
-                        phone: formData.phone, // Ensure phone is collected or optional in DB
-                        address: fullAddress,
-                      });
+                      // Critical check for customer name before proceeding
+                      if (!customerNameToUse) {
+                        console.error("Critical: Customer name is empty before creating order.");
+                        setPaymentError("Failed to determine customer name. Order cannot be saved.");
+                        throw new Error("Customer name is missing and could not be resolved.");
+                      }
+                      console.log(`Proceeding with Customer ID: ${customerId}, Name: ${customerNameToUse}, Email: ${customerEmailToUse}`);
 
                       // Calculate total amount
                       const [min, max] = formData.weight.split("-").map(Number);
